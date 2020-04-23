@@ -23,7 +23,7 @@ Without configuring any parameters, the retry behavior will be as follows:
 - retry inital delay of 100ms with exponential backoff
 - retry only on 5xx response
 - socket timeout of 30s
-```
+```js
 const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
@@ -49,7 +49,7 @@ _Note: the environment variables override the default values if the correspondin
 ### Custom Parameter Examples
 
 This example decreases the `retryMaxDuration` and makes the retry delay a static 500ms. This will do no more than 4 retries.
-```
+```js
 const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
@@ -65,7 +65,7 @@ async main() {
 
 This example shows how to configure retries on specific HTTP responses:
 
-```
+```js
 const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
@@ -83,7 +83,7 @@ async main() {
 
 This example uses custom `socketTimeout` values:
 
-```
+```js
 const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
@@ -101,7 +101,7 @@ async main() {
 
 You can disable all retry behavior by setting `retryOptions` to `false`.
 
-```
+```js
 const fetch = require('@adobe/node-fetch-retry');
 
 async main() {

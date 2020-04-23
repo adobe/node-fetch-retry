@@ -7,6 +7,7 @@
     "name": "Adobe Inc."
   },
   "repository": "adobe/node-fetch-retry",
+  "license": "Apache-2.0",
   "dependencies": {
     "node-fetch-npm": "^2.0.3"
   },
