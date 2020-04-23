@@ -7,7 +7,7 @@ It is a wrapper around [`node-fetch-npm`](https://github.com/npm/node-fetch-npm)
 ## Installation
 
 ```bash
-npm install @adobe/fetch-retry
+npm install @adobe/node-fetch-retry
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ Without configuring any parameters, the retry behavior will be as follows:
 - retry only on 5xx response
 - socket timeout of 30s
 ```
-const fetch = require('@adobe/fetch-retry');
+const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
     const response = await fetch(url);
@@ -48,7 +48,7 @@ _Note: the environment variables override the default values if the correspondin
 
 This example decreases the `retryMaxDuration` and makes the retry delay a static 500ms. This will do no more than 4 retries.
 ```
-const fetch = require('@adobe/fetch-retry');
+const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
     const response = await fetch(url, {
@@ -64,7 +64,7 @@ async main() {
 This example shows how to configure retries on specific HTTP responses:
 
 ```
-const fetch = require('@adobe/fetch-retry');
+const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
     const response = await fetch(url, {
@@ -82,7 +82,7 @@ async main() {
 This example uses custom `socketTimeout` values:
 
 ```
-const fetch = require('@adobe/fetch-retry');
+const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
     const response = await fetch(url, {
@@ -100,7 +100,7 @@ async main() {
 You can disable all retry behavior by setting `retryOptions` to `false`.
 
 ```
-const fetch = require('@adobe/fetch-retry');
+const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
     const response = await fetch(url, {

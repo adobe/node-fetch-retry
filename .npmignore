@@ -8,6 +8,8 @@ test/
 .eslintignore
 stryker.conf.js
 build/
+.travis.yml
+.github/
 
 # npm pack leftovers
 *.tgz
