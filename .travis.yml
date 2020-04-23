@@ -9,9 +9,6 @@
 # governing permissions and limitations under the License.
 
 language: node_js
-git:
-  depth: 10
-
 os:
   - windows
   - linux
