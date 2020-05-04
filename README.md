@@ -1,4 +1,4 @@
-HELLO Spark! 3
+HELLO Spark! 4
 
 [![Version](https://img.shields.io/npm/v/@adobe/node-fetch-retry.svg)](https://npmjs.org/package/@adobe/node-fetch-retry)
 
