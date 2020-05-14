@@ -31,9 +31,6 @@ node_modules/
 jspm_packages/
 bower_components/
 
-# Dependencies - other
-dependencies-licenses.log
-
 # TypeScript v1 declaration files
 typings/
 
