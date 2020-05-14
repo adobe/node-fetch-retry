@@ -28,8 +28,6 @@
   ],
   "scripts": {
     "test": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit",
-    "posttest": "eslint ./",
-    "dep-license-details": "license-checker -unknown --out dependencies-licenses.log",
-    "dep-license-list": "license-checker --summary -unknown"
+    "posttest": "eslint ./"
   }
 }
