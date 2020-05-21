@@ -35,7 +35,7 @@
     "test-cross-os": {
       "darwin": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit",
       "linux": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit",
-      "win32": "nyc --reporter=html --reporter=text ..\\node_modules\\.bin/mocha ..\\test --recursive --exit"
+      "win32": "nyc --reporter=html --reporter=text ..\\node_modules\\.bin\\mocha ..\\test --recursive --exit"
     },
     "posttest-cross-os": {
       "darwin": "eslint ./",
