@@ -1,14 +1,14 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-OF ANY KIND, either express or implied. See the License for the specific language
-governing permissions and limitations under the License.
-*/
+ * Copyright 2020 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */
 
 /* eslint-env mocha */
 /* eslint mocha/no-mocha-arrows: "off" */
@@ -24,8 +24,8 @@ const rewire = require('rewire');
 const http = require('http');
 const getPort = require('get-port');
 
-const FAKE_BASE_URL = 'https://fakeurl.com'
-const FAKE_PATH = '/image/test.png'
+const FAKE_BASE_URL = 'https://fakeurl.com';
+const FAKE_PATH = '/image/test.png';
 
 
 describe('test `retryInit` function', () => {
@@ -36,7 +36,7 @@ describe('test `retryInit` function', () => {
         delete process.env.NODE_FETCH_RETRY_SOCKET_TIMEOUT;
         delete process.env.NODE_FETCH_RETRY_INITIAL_WAIT;
         delete process.env.NODE_FETCH_RETRY_FORCE_TIMEOUT;
-    })
+    });
     it('no params, use default values', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -50,7 +50,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 30000);
-    })
+    });
 
     it('no params, environment variables set, override default values', () => {
         const rewiredFetchRetry = rewire('../index');
@@ -69,7 +69,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 1000);
-    })
+    });
 
     it('pass in custom parameters', () => {
         const rewiredFetchRetry = rewire('../index');
@@ -93,7 +93,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), false);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 2000);
-    })
+    });
 
     it('pass in custom parameters and set enviroment variables, passed parameters take priority', () => {
         const rewiredFetchRetry = rewire('../index');
@@ -122,7 +122,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), false);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 2000);
-    })
+    });
 
     it('socket timeout is larger than retry max duration', () => {
         const rewiredFetchRetry = rewire('../index');
@@ -141,7 +141,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 1500); // gets set to half the retryMaxDuration
-    })
+    });
     it('socket timeout is larger than retry max duration but `forceSocketTimeout` is true', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -160,7 +160,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 4000); // gets set to half the retryMaxDuration
-    })
+    });
 
     it('retry max duration is greater than time till action timeout', () => {
         const rewiredFetchRetry = rewire('../index');
@@ -178,102 +178,102 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
-    })
+    });
 });
 
 describe('test fetch retry', () => {
     afterEach(() => {
         assert(nock.isDone);
         nock.cleanAll();
-    })
+    });
 
     it('test fetch get works 200', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(200, { ok: true })
+            .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert.strictEqual(response.ok, true);
-    })
+    });
 
     it('test fetch get works 202', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(202, { ok: true })
+            .reply(202, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert.strictEqual(response.ok, true);
-    })
+    });
 
     it('test fetch put works 200', async () => {
         nock(FAKE_BASE_URL)
             .put(FAKE_PATH, 'hello')
-            .reply(200, { ok: true })
+            .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'PUT', body: 'hello' });
         assert.strictEqual(response.ok, true);
-    })
+    });
 
     it('test fetch put works 202', async () => {
         nock(FAKE_BASE_URL)
             .put(FAKE_PATH, 'hello')
-            .reply(202, { ok: true })
+            .reply(202, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'PUT', body: 'hello' });
         assert.strictEqual(response.ok, true);
-    })
+    });
 
     it('test disable retry', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(500)
+            .reply(500);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: false });
         assert.strictEqual(response.statusText, 'Internal Server Error');
-    })
+    });
 
     it('test get retry with default settings 500 then 200', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
             .twice()
-            .reply(500)
+            .reply(500);
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(200, { ok: true })
+            .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(response.ok);
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
-    })
+    });
 
     it('test retry with default settings 400', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(400)
+            .reply(400);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(!response.ok);
         assert.strictEqual(response.statusText, 'Bad Request');
         assert.strictEqual(response.status, 400);
-    })
+    });
 
     it('test retry with default settings 404', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(404)
+            .reply(404);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(!response.ok);
         assert.strictEqual(response.statusText, 'Not Found');
         assert.strictEqual(response.status, 404);
-    })
+    });
 
     it('test retry with default settings 300', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(300)
+            .reply(300);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(!response.ok);
         assert.strictEqual(response.statusText, 'Multiple Choices');
         assert.strictEqual(response.status, 300);
-    })
+    });
 
     it('test retry with default settings error 3 times 503', async () => {
         nock(FAKE_BASE_URL)
@@ -282,15 +282,15 @@ describe('test fetch retry', () => {
             .replyWithError({
                 message: 'something awful happened',
                 code: '503',
-            })
+            });
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(200, { ok: true })
+            .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
-    })
+    });
 
     it('test retry timeout on error 503', async () => {
         nock(FAKE_BASE_URL)
@@ -299,7 +299,7 @@ describe('test fetch retry', () => {
             .replyWithError({
                 message: 'something awful happened',
                 code: '503',
-            })
+            });
         try {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 1000 } });
         } catch (e) {
@@ -307,31 +307,31 @@ describe('test fetch retry', () => {
             assert.strictEqual(e.message, 'request to https://fakeurl.com/image/test.png failed, reason: something awful happened');
             assert.strictEqual(e.code, '503');
         }
-    })
+    });
 
     it('test retry timeout on 404 response', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
             .thrice()
-            .reply(404)
+            .reply(404);
 
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, {
             method: 'GET',
             retryOptions: {
                 retryMaxDuration: 1000,
-                retryOnHttpResponse: (res) => { return !res.ok }
+                retryOnHttpResponse: (res) => { return !res.ok; }
             }
         });
         assert(nock.isDone());
         assert.strictEqual(response.statusText, 'Not Found');
         assert.strictEqual(response.status, 404);
-    })
+    });
 
     it('test retry with retryInitialDelay > retryMaxDuration, (no retry)', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
             .twice()
-            .reply(505)
+            .reply(505);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
             {
                 method: 'GET', retryOptions: {
@@ -344,23 +344,23 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.statusText, 'HTTP Version Not Supported');
         assert.strictEqual(response.status, 505);
 
-    })
+    });
 
     it('test retry with custom settings', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
             .twice()
-            .reply(403)
+            .reply(403);
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(200)
+            .reply(200);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
             {
                 method: 'GET', retryOptions: {
                     retryInitialDelay: 200,
                     retryMaxDuration: 1000,
                     retryOnHttpResponse: (response) => {
-                        return !response.ok
+                        return !response.ok;
                     }
                 }
             });
@@ -368,13 +368,13 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
 
-    })
+    });
 
     it('test retry with small interval', async () => {
         nock(FAKE_BASE_URL)
             .persist()
             .get(FAKE_PATH)
-            .reply(404)
+            .reply(404);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
             {
                 method: 'GET', retryOptions: {
@@ -388,7 +388,7 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.statusText, 'Not Found');
         assert.strictEqual(response.status, 404);
 
-    }).timeout(3000)
+    }).timeout(3000);
 
     it('test retry with malformed settings', async () => {
         let threw = false;
@@ -404,7 +404,7 @@ describe('test fetch retry', () => {
         try {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryInitialDelay: -123425 } });
         } catch (e) {
-            assert.strictEqual(e.message, "`retryInitialDelay` must not be a negative integer")
+            assert.strictEqual(e.message, "`retryInitialDelay` must not be a negative integer");
             threw = true;
         }
         assert.ok(threw);
@@ -413,7 +413,7 @@ describe('test fetch retry', () => {
         try {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryOnHttpResponse: 123425 } });
         } catch (e) {
-            assert.strictEqual(e.message, "'retryOnHttpResponse' must be a function: 123425")
+            assert.strictEqual(e.message, "'retryOnHttpResponse' must be a function: 123425");
             threw = true;
         }
         assert.ok(threw);
@@ -423,7 +423,7 @@ describe('test fetch retry', () => {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryBackoff: 0 } });
             // retryBackoff must be greater than zero
         } catch (e) {
-            assert.strictEqual(e.message, "`retryBackoff` must be a positive integer >= 1")
+            assert.strictEqual(e.message, "`retryBackoff` must be a positive integer >= 1");
             threw = true;
         }
         assert.ok(threw);
@@ -432,7 +432,7 @@ describe('test fetch retry', () => {
         try {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryBackoff: '21rgvfdb;wt' } });
         } catch (e) {
-            assert.strictEqual(e.message, "`retryBackoff` must be a positive integer >= 1")
+            assert.strictEqual(e.message, "`retryBackoff` must be a positive integer >= 1");
             threw = true;
         }
         assert.ok(threw);
@@ -441,11 +441,11 @@ describe('test fetch retry', () => {
         try {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { socketTimeout: '21rgvfdb;wt' } });
         } catch (e) {
-            assert.strictEqual(e.message, "`socketTimeout` must not be a negative integer")
+            assert.strictEqual(e.message, "`socketTimeout` must not be a negative integer");
             threw = true;
         }
         assert.ok(threw);
-    })
+    });
 
     it("verifies handling of socket timeout when socket times out (after first failure)", async () => {
         const socketTimeout = 500;
@@ -541,7 +541,7 @@ describe('test fetch retry', () => {
         };
         try {
             await fetch(`http://${hostname}:${port}`, { method: 'GET', retryOptions: retry });
-            assert.fail("Should have timed out!")
+            assert.fail("Should have timed out!");
         } catch (e) {
             console.log(e);
             assert(e.message.includes("network timeout"));
@@ -549,7 +549,7 @@ describe('test fetch retry', () => {
         } finally {
             server.close();
         }
-    })
+    });
 
     it("verifies handling of socket timeout when socket does not time out (works after initial failure)", async () => {
         const socketTimeout = 5000;
@@ -600,14 +600,14 @@ describe('test fetch retry', () => {
         assert.ok(result.timeout === socketTimeout);
 
         server.close();
-    })
+    });
 
     it("Verifies the parameter options is not required", async () => {
 
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .reply(200, { ok: true })
+            .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`);
         assert.strictEqual(response.ok, true);
     });
-})
+});
