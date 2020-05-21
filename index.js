@@ -137,7 +137,7 @@ function checkParameters(retryOptions) {
 /**
  * Fetch retry that wraps around `node-fetch` library
  * @param {Options} options options for fetch request RetryOptions for retries or `false` if no do not want to perform retries
- * @returns {Object} json repsonse of calling fetch
+ * @returns {Object} json response of calling fetch
  */
 module.exports = async function (url, options) {
     options = options || {};
