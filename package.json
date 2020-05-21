@@ -35,7 +35,7 @@
     "test-cross-os": {
       "darwin": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit",
       "linux": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit",
-      "win32": "npm install -g mocha && nyc --reporter=html --reporter=text %APPDATA%\\npm\\mocha.cmd ..\\test --recursive --exit"
+      "win32": "npm install -g mocha && echo %PATH% && nyc --reporter=html --reporter=text C:\\ProgramData\\nvs\\node\\10.20.1\\x64\\node_modules\\mocha\bin\\_mocha ..\\test --recursive --exit"
     },
     "posttest-cross-os": {
       "darwin": "eslint ./",
