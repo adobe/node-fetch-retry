@@ -30,19 +30,14 @@
   ],
   "scripts": {
     "test": "cross-os test-cross-os",
-    "posttest": "cross-os posttest-cross-os",
+    "posttest": "eslint",
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "cross-os": {
     "test-cross-os": {
-      "darwin": "nyc mocha ./test --recursive --exit",
-      "linux": "nyc mocha ./test --recursive --exit",
-      "win32": "nyc C:\\Users\\travis\\build\\adobe\\node-fetch-retry\\node_modules\\.bin\\mocha.cmd --recursive --exit"
-    },
-    "posttest-cross-os": {
-      "darwin": "eslint .",
-      "linux": "eslint .",
-      "win32": "eslint"
+      "darwin": "nyc mocha --recursive --exit",
+      "linux": "nyc mocha --recursive --exit",
+      "win32": "nyc mocha --recursive --exit"
     }
   }
 }
