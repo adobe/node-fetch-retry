@@ -42,7 +42,7 @@
     "posttest-cross-os": {
       "darwin": "eslint .",
       "linux": "eslint .",
-      "win32": "eslint ..\\"
+      "win32": "eslint"
     }
   }
 }
