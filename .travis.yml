@@ -25,3 +25,6 @@ install:
 
 script:
   - npm test
+
+after_success:
+  - npm run report-coverage

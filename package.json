@@ -29,17 +29,18 @@
   ],
   "scripts": {
     "test": "cross-os test-cross-os",
-    "posttest": "cross-os posttest-cross-os"
+    "posttest": "cross-os posttest-cross-os",
+    "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   },
   "cross-os": {
     "test-cross-os": {
-      "darwin": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit",
-      "linux": "nyc --reporter=html --reporter=text ./node_modules/.bin/mocha ./test --recursive --exit",
-      "win32": "nyc --reporter=html --reporter=text C:\\Users\\travis\\build\\adobe\\node-fetch-retry\\node_modules\\.bin\\mocha.cmd --recursive --exit"
+      "darwin": "nyc mocha ./test --recursive --exit",
+      "linux": "nyc mocha ./test --recursive --exit",
+      "win32": "nyc C:\\Users\\travis\\build\\adobe\\node-fetch-retry\\node_modules\\.bin\\mocha.cmd --recursive --exit"
     },
     "posttest-cross-os": {
-      "darwin": "eslint ./",
-      "linux": "eslint ./",
+      "darwin": "eslint .",
+      "linux": "eslint .",
       "win32": "eslint ..\\"
     }
   }
