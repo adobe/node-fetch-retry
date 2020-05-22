@@ -13,7 +13,7 @@
 /* eslint-env mocha */
 /* eslint mocha/no-mocha-arrows: "off" */
 
-'use strict';
+'use strict'
 
 const nock = require('nock');
 const assert = require('assert');
