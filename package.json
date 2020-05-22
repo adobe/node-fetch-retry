@@ -29,7 +29,7 @@
   ],
   "scripts": {
     "test": "nyc mocha --recursive --exit",
-    "posttest": "eslint . --debug",
+    "posttest": "eslint .",
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov"
   }
 }
