@@ -24,5 +24,9 @@ node_js:
 install:
   - npm version
   - npm install
+
 script:
   - npm test
+
+after_success:
+  - npm run report-coverage
