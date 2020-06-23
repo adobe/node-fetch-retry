@@ -58,7 +58,7 @@ async main() {
     const response = await fetch(url, {
         retryOptions: {
             retryMaxDuration: 2000,  // 30s retry max duration
-            retryInitalDelay: 500,
+            retryInitialDelay: 500,
             retryBackoff: 1.0 // no backoff
         }
     });
