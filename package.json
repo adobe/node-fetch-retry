@@ -2,7 +2,7 @@
   "name": "@adobe/node-fetch-retry",
   "version": "1.0.1",
   "main": "index.js",
-  "description": "Library for performing retries on HTTP requests",
+  "description": "Library for performing retries on HTTP requests_2",
   "author": {
     "name": "Adobe Inc."
   },
