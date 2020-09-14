@@ -431,7 +431,63 @@ describe('test fetch retry', () => {
         assert(nock.isDone());
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
+    });
 
+    it('do not retry on some HTTP codes', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .twice()
+            .reply(401);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200);
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            {
+                method: 'GET', retryOptions: {
+                    retryInitialDelay: 200,
+                    retryMaxDuration: 1000,
+                    retryOnHttpResponse: (response) => {
+                        return response.status !== 401;
+                    }
+                }
+            });
+        assert(!nock.isDone()); // nock should not have gotten all calls
+        assert.strictEqual(response.statusText, 'Unauthorized');
+        assert.strictEqual(response.status, 401);
+
+        // clean up nock
+        nock.cleanAll();
+    });
+
+    it('do not retry on some HTTP codes and custom headers', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .twice()
+            .reply(401);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200);
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            {
+                method: 'GET', 
+                headers: {
+                    Authorization: 'Basic thisShouldBeAnAuthHeader'
+                },
+                retryOptions: {
+                    retryInitialDelay: 200,
+                    retryMaxDuration: 1000,
+                    retryOnHttpResponse: (response) => {
+                        return response.status !== 401;
+                    }
+                }
+            });
+        assert(!nock.isDone()); // nock should not have gotten all calls
+        assert.strictEqual(response.statusText, 'Unauthorized');
+        assert.strictEqual(response.status, 401);
+
+        // clean up nock
+        nock.cleanAll();
     });
 
     it('test retry with small interval', async () => {
