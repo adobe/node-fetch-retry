@@ -18,8 +18,6 @@ npm install @adobe/node-fetch-retry
 
 This library works the same as the normal [`fetch api`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API), but with some added features. 
 
-For instance, you can set a `headers` object in the `options` used to make the HTTP(S) request.
-
 ### Default Behavior
 
 Without configuring any parameters, the retry behavior will be as follows:
@@ -32,6 +30,20 @@ const fetch = require('@adobe/node-fetch-retry');
 
 async main() {
     const response = await fetch(url);
+}
+```
+
+This example uses only custom headers and will use default retry settings:
+
+```js
+const fetch = require('@adobe/node-fetch-retry');
+
+async main() {
+    const response = await fetch(url, {
+        headers: {
+            'custom-header': '<<put custom header value here>>'
+        }
+    });
 }
 ```
 
@@ -118,20 +130,6 @@ async main() {
 }
 ```
 
-This example uses only custom headers:
-
-```js
-const fetch = require('@adobe/node-fetch-retry');
-
-async main() {
-    const response = await fetch(url, {
-        headers: {
-            'custom-header': '<<put custom header value here>>'
-        }
-    });
-}
-```
-
 
 ### Disable Retry
 
@@ -148,20 +146,7 @@ async main() {
 ```
 
 Disabling retry behavior will not prevent the usage of other options set on the `options` object.
-This example showcases a disabled retry behavior, but custom headers will still be set for the request:
 
-```js
-const fetch = require('@adobe/node-fetch-retry');
-
-async main() {
-    const response = await fetch(url, {
-        retryOptions: false,
-        headers: {
-            'custom-header': '<<put custom header value here>>'
-        }
-    });
-}
-```
 
 ### Apache OpenWhisk Action Support
 
