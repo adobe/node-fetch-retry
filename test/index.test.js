@@ -249,6 +249,21 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.ok, true);
     });
 
+    it('test fetch stops on 401 with custom headers (basic auth)', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .reply(401, { ok: false });
+
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            { 
+                method: 'GET', 
+                headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' } 
+            }
+        );
+        assert.strictEqual(response.ok, false);
+    });
+
     it('test disable retry', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
@@ -266,6 +281,26 @@ describe('test fetch retry', () => {
             .get(FAKE_PATH)
             .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert(response.ok);
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+
+    it('test get retry with default settings 500 then 200 with auth headers set', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .twice()
+            .reply(500);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, 
+            { 
+                method: 'GET', headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }  
+            });
         assert(nock.isDone());
         assert(response.ok);
         assert.strictEqual(response.statusText, 'OK');
@@ -373,7 +408,6 @@ describe('test fetch retry', () => {
         nock.cleanAll();
         assert.strictEqual(response.statusText, 'HTTP Version Not Supported');
         assert.strictEqual(response.status, 505);
-
     });
 
     it('test retry with custom settings', async () => {
@@ -633,7 +667,6 @@ describe('test fetch retry', () => {
     });
 
     it("Verifies the parameter options is not required", async () => {
-
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
             .reply(200, { ok: true });
