@@ -16,7 +16,9 @@ npm install @adobe/node-fetch-retry
 
 ## Usage
 
-This library works the same as the normal [`fetch api`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API), but with some added features.
+This library works the same as the normal [`fetch api`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API), but with some added features. 
+
+For instance, you can set a `headers` object in the `options` used to make the HTTP(S) request.
 
 ### Default Behavior
 
@@ -35,7 +37,7 @@ async main() {
 
 ### Optional Custom Parameters
 
-All the retry options are configurable and can be set in `retryOptions`.
+All the retry options are configurable and can be set in `retryOptions` in the `options` object passed to `fetch`.
 
 | Parameter | Format | Description | Environment variable | Default Value |
 | --------- | ------ | ----------- | -------------------- | ------------- |
@@ -98,6 +100,38 @@ async main() {
 }
 ```
 
+This example uses custom `socketTimeout` values and custom headers:
+
+```js
+const fetch = require('@adobe/node-fetch-retry');
+
+async main() {
+    const response = await fetch(url, {
+        retryOptions: {
+            retryMaxDuration: 300000, // 5min retry duration
+            socketTimeout: 60000, //  60s socket timeout
+        },
+        headers: {
+            'custom-header': '<<put custom header value here>>'
+        }
+    });
+}
+```
+
+This example uses only custom headers:
+
+```js
+const fetch = require('@adobe/node-fetch-retry');
+
+async main() {
+    const response = await fetch(url, {
+        headers: {
+            'custom-header': '<<put custom header value here>>'
+        }
+    });
+}
+```
+
 
 ### Disable Retry
 
@@ -109,6 +143,23 @@ const fetch = require('@adobe/node-fetch-retry');
 async main() {
     const response = await fetch(url, {
         retryOptions: false
+    });
+}
+```
+
+Disabling retry behavior will not prevent the usage of other options set on the `options` object.
+
+This example showcases a disabled retry behavior, but custom headers will still be set:
+
+```js
+const fetch = require('@adobe/node-fetch-retry');
+
+async main() {
+    const response = await fetch(url, {
+        retryOptions: false,
+        headers: {
+            'custom-header': '<<put custom header value here>>'
+        }
     });
 }
 ```
