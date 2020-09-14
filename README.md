@@ -148,8 +148,7 @@ async main() {
 ```
 
 Disabling retry behavior will not prevent the usage of other options set on the `options` object.
-
-This example showcases a disabled retry behavior, but custom headers will still be set:
+This example showcases a disabled retry behavior, but custom headers will still be set for the request:
 
 ```js
 const fetch = require('@adobe/node-fetch-retry');
