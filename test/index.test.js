@@ -47,8 +47,8 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 100);
         assert.strictEqual(retryOptions.retryBackoff, 2);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 30000);
     });
 
@@ -66,8 +66,8 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 500);
         assert.strictEqual(retryOptions.retryBackoff, 1);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 1000);
     });
 
@@ -76,13 +76,13 @@ describe('test `retryInit` function', () => {
         const retryInit = rewiredFetchRetry.__get__('retryInit');
         const retryOptions = retryInit({
             retryOptions: {
-                retryMaxDuration:3000,
-                retryInitialDelay:200,
-                retryBackoff:3.0,
+                retryMaxDuration: 3000,
+                retryInitialDelay: 200,
+                retryBackoff: 3.0,
                 retryOnHttpResponse: () => {
                     return false;
                 },
-                socketTimeout:2000
+                socketTimeout: 2000
             }
         });
         assert.strictEqual(typeof retryOptions.startTime, 'number');
@@ -90,8 +90,8 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 200);
         assert.strictEqual(retryOptions.retryBackoff, 3);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), false);
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 2000);
     });
 
@@ -105,13 +105,13 @@ describe('test `retryInit` function', () => {
         process.env.NODE_FETCH_RETRY_SOCKET_TIMEOUT = 1000;
         const retryOptions = retryInit({
             retryOptions: {
-                retryMaxDuration:3000,
-                retryInitialDelay:200,
-                retryBackoff:3.0,
+                retryMaxDuration: 3000,
+                retryInitialDelay: 200,
+                retryBackoff: 3.0,
                 retryOnHttpResponse: () => {
                     return false;
                 },
-                socketTimeout:2000
+                socketTimeout: 2000
             }
         });
         assert.strictEqual(typeof retryOptions.startTime, 'number');
@@ -119,8 +119,8 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 200);
         assert.strictEqual(retryOptions.retryBackoff, 3);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), false);
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 2000);
     });
 
@@ -129,8 +129,8 @@ describe('test `retryInit` function', () => {
         const retryInit = rewiredFetchRetry.__get__('retryInit');
         const retryOptions = retryInit({
             retryOptions: {
-                retryMaxDuration:3000,
-                socketTimeout:4000
+                retryMaxDuration: 3000,
+                socketTimeout: 4000
             }
         });
         assert.strictEqual(typeof retryOptions.startTime, 'number');
@@ -138,8 +138,8 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 100);
         assert.strictEqual(retryOptions.retryBackoff, 2);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 1500); // gets set to half the retryMaxDuration
     });
     it('socket timeout is larger than retry max duration but `forceSocketTimeout` is true', () => {
@@ -147,8 +147,8 @@ describe('test `retryInit` function', () => {
         const retryInit = rewiredFetchRetry.__get__('retryInit');
         const retryOptions = retryInit({
             retryOptions: {
-                retryMaxDuration:3000,
-                socketTimeout:4000,
+                retryMaxDuration: 3000,
+                socketTimeout: 4000,
                 forceSocketTimeout: true
             }
         });
@@ -157,8 +157,8 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 100);
         assert.strictEqual(retryOptions.retryBackoff, 2);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 4000); // gets set to half the retryMaxDuration
     });
 
@@ -168,7 +168,7 @@ describe('test `retryInit` function', () => {
         process.env.__OW_ACTION_DEADLINE = Date.now() + 1000;
         const retryOptions = retryInit({
             retryOptions: {
-                retryMaxDuration:3000
+                retryMaxDuration: 3000
             }
         });
         assert.strictEqual(typeof retryOptions.startTime, 'number');
@@ -176,8 +176,8 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 100);
         assert.strictEqual(retryOptions.retryBackoff, 2);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:500 }), true);
-        assert.strictEqual(retryOptions.retryOnHttpResponse({ status:400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
+        assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
     });
 });
 
@@ -192,6 +192,36 @@ describe('test fetch retry', () => {
             .get(FAKE_PATH)
             .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert.strictEqual(response.ok, true);
+    });
+
+    it('test fetch get works 200 with custom headers (basic auth)', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .reply(200, { ok: true });
+
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            { 
+                method: 'GET', 
+                headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' } 
+            }
+        );
+        assert.strictEqual(response.ok, true);
+    });
+
+    it('test fetch get works 200 with custom headers (bearer token)', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Bearer thisShouldBeAToken')
+            .reply(200, { ok: true });
+
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            { 
+                method: 'GET', 
+                headers: { Authorization: 'Bearer thisShouldBeAToken' } 
+            }
+        );
         assert.strictEqual(response.ok, true);
     });
 

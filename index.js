@@ -135,8 +135,8 @@ function checkParameters(retryOptions) {
  */
 /**
  * Fetch retry that wraps around `node-fetch` library
- * @param {Options} options options for fetch request RetryOptions for retries or `false` if no do not want to perform retries
- * @returns {Object} json response of calling fetch
+ * @param {Options} options options for fetch request: RetryOptions for retries or `false` if no do not want to perform retries
+ * @returns {Object} json response of calling fetch (if options already contain headers, the headers param wins on name conflicts)
  */
 module.exports = async function (url, options) {
     options = options || {};
