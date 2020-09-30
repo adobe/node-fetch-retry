@@ -11,7 +11,7 @@
  */
 'use strict';
 
-const fetch = require('node-fetch-npm');
+const fetch = require('node-fetch');
 
 /**
  * Retry
