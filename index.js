@@ -18,7 +18,6 @@ const fetch = require('node-fetch');
  * @param {RetryOptions} retryOptions whether or not to retry on all http error codes or just >500
  * @param {Object} error error object if the fetch request returned an error
  * @param {Object} response fetch call response
- * @param {Object} retryFlag flag to force stopping retry (when set to false)
  * @returns {Boolean} whether or not to retry the request
  */
 function retry(retryOptions, error, response) {
@@ -34,7 +33,7 @@ function retry(retryOptions, error, response) {
 /**
  * Retry Init to set up retry options used in `fetch-retry`
  * @param {Options} options object containing fetch options and retry options
- * @returns {RetryOptions} object containing specific attributes for retries or `false` if no retries should be performed
+ * @returns {RetryOptions|Boolean} object containing specific attributes for retries or `false` if no retries should be performed
  */
 function retryInit(options={}) {
     if (options.retryOptions !== false) {
@@ -80,8 +79,7 @@ function retryInit(options={}) {
 /**
  * Calculate the retry delay
  *
- * @param {Number} attempt Attempt count
- * @param {RetryOptions} options Retry options
+ * @param {RetryOptions} retryOptions Retry options
  * @param {Boolean} [random=true] Add randomness
  */
 function retryDelay(retryOptions, random = true) {
@@ -135,6 +133,7 @@ function checkParameters(retryOptions) {
  */
 /**
  * Fetch retry that wraps around `node-fetch` library
+ * @param {String} url request url
  * @param {Options} options options for fetch request (e.g. headers, RetryOptions for retries or `false` if no do not want to perform retries)
  * @returns {Object} json response of calling fetch 
  */
