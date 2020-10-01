@@ -11,14 +11,15 @@
  */
 'use strict';
 
-const fetch = require('node-fetch-npm');
+const AbortController = require('abort-controller');
+const fetch = require('node-fetch');
+const {FetchError} = fetch;
 
 /**
  * Retry
  * @param {RetryOptions} retryOptions whether or not to retry on all http error codes or just >500
  * @param {Object} error error object if the fetch request returned an error
  * @param {Object} response fetch call response
- * @param {Object} retryFlag flag to force stopping retry (when set to false)
  * @returns {Boolean} whether or not to retry the request
  */
 function retry(retryOptions, error, response) {
@@ -34,7 +35,7 @@ function retry(retryOptions, error, response) {
 /**
  * Retry Init to set up retry options used in `fetch-retry`
  * @param {Options} options object containing fetch options and retry options
- * @returns {RetryOptions} object containing specific attributes for retries or `false` if no retries should be performed
+ * @returns {RetryOptions|Boolean} object containing specific attributes for retries or `false` if no retries should be performed
  */
 function retryInit(options={}) {
     if (options.retryOptions !== false) {
@@ -80,8 +81,7 @@ function retryInit(options={}) {
 /**
  * Calculate the retry delay
  *
- * @param {Number} attempt Attempt count
- * @param {RetryOptions} options Retry options
+ * @param {RetryOptions} retryOptions Retry options
  * @param {Boolean} [random=true] Add randomness
  */
 function retryDelay(retryOptions, random = true) {
@@ -135,6 +135,7 @@ function checkParameters(retryOptions) {
  */
 /**
  * Fetch retry that wraps around `node-fetch` library
+ * @param {String} url request url
  * @param {Options} options options for fetch request (e.g. headers, RetryOptions for retries or `false` if no do not want to perform retries)
  * @returns {Object} json response of calling fetch 
  */
@@ -147,19 +148,37 @@ module.exports = async function (url, options) {
     return new Promise(function (resolve, reject) {
         const wrappedFetch = async () => {
             ++attempt;
+
+            let timeoutHandler;
+            if (retryOptions.socketTimeout) {
+                const controller = new AbortController();
+                timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
+                options.signal = controller.signal;
+            }
+
             try {
-                options.timeout = retryOptions.socketTimeout; // fetch syntax expects socket timeout to be under `timout`
                 const response = await fetch(url, options);
 
+                clearTimeout(timeoutHandler);
+
                 if (!retry(retryOptions, null, response)) {
+                    // response.timeout should reflect the actual timeout
+                    response.timeout = retryOptions.socketTimeout;
                     return resolve(response);
                 }
 
                 console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} failed (status ${response.status}): ${response.statusText}`);
             } catch (error) {
+                clearTimeout(timeoutHandler);
+
                 if (!retry(retryOptions, error, null)) {
+                    if (error.name === 'AbortError') {
+                        return reject(new FetchError(`network timeout at: ${url}`, 'request-timeout'));
+                    }
+
                     return reject(error);
                 }
+
                 console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} error: ${error.message}`);
             }
 
