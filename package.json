@@ -9,6 +9,7 @@
   "repository": "adobe/node-fetch-retry",
   "license": "Apache-2.0",
   "dependencies": {
+    "abort-controller": "^3.0.0",
     "node-fetch": "^2.6.1"
   },
   "devDependencies": {

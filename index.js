@@ -11,7 +11,9 @@
  */
 'use strict';
 
+const AbortController = require('abort-controller');
 const fetch = require('node-fetch');
+const {FetchError} = fetch;
 
 /**
  * Retry
@@ -146,19 +148,37 @@ module.exports = async function (url, options) {
     return new Promise(function (resolve, reject) {
         const wrappedFetch = async () => {
             ++attempt;
+
+            let timeoutHandler;
+            if (retryOptions.socketTimeout) {
+                const controller = new AbortController();
+                timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
+                options.signal = controller.signal;
+            }
+
             try {
-                options.timeout = retryOptions.socketTimeout; // fetch syntax expects socket timeout to be under `timout`
                 const response = await fetch(url, options);
 
+                clearTimeout(timeoutHandler);
+
                 if (!retry(retryOptions, null, response)) {
+                    // response.timeout should reflect the actual timeout
+                    response.timeout = retryOptions.socketTimeout;
                     return resolve(response);
                 }
 
                 console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} failed (status ${response.status}): ${response.statusText}`);
             } catch (error) {
+                clearTimeout(timeoutHandler);
+
                 if (!retry(retryOptions, error, null)) {
+                    if (error.name === 'AbortError') {
+                        return reject(new FetchError(`network timeout at: ${url}`, 'request-timeout'));
+                    }
+
                     return reject(error);
                 }
+
                 console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} error: ${error.message}`);
             }
 
