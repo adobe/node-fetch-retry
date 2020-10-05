@@ -609,7 +609,7 @@ describe('test fetch retry', () => {
             assert.fail("Should have timed out!");
         } catch (e) {
             console.log(e);
-            assert(e.message.includes("network timeout"));
+            assert(e.message.includes("Network timeout"));
             assert(e.type === "request-timeout");
         } finally {
             server.close();
@@ -664,7 +664,7 @@ describe('test fetch retry', () => {
             assert.fail("Should have timed out!");
         } catch (e) {
             console.log(e);
-            assert(e.message.includes("network timeout"));
+            assert(e.message.includes("Network timeout"));
             assert(e.type === "request-timeout");
         } finally {
             server.close();
