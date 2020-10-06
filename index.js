@@ -173,7 +173,7 @@ module.exports = async function (url, options) {
 
                 if (!retry(retryOptions, error, null)) {
                     if (error.name === 'AbortError') {
-                        return reject(new FetchError('Network timeout', 'request-timeout'));
+                        return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
                     }
 
                     return reject(error);
