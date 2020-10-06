@@ -31,6 +31,7 @@
   ],
   "scripts": {
     "test": "nyc mocha --recursive --exit",
+    "test:watch": "nyc mocha --recursive --watch",
     "posttest": "eslint . && license-checker --summary",
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "beautify": "eslint . --fix"
