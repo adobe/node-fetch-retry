@@ -135,7 +135,7 @@ function checkParameters(retryOptions) {
  */
 /**
  * Fetch retry that wraps around `node-fetch` library
- * @param {String} url request url
+ * @param {String|FetchRequest} url request url or FetchRequest
  * @param {Options} options options for fetch request (e.g. headers, RetryOptions for retries or `false` if no do not want to perform retries)
  * @returns {Object} json response of calling fetch 
  */
@@ -173,7 +173,7 @@ module.exports = async function (url, options) {
 
                 if (!retry(retryOptions, error, null)) {
                     if (error.name === 'AbortError') {
-                        return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
+                        return reject(new FetchError(`network timeout at ${typeof url === 'string' ? url : url.url}`, 'request-timeout'));
                     }
 
                     return reject(error);
