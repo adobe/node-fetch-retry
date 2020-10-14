@@ -49,15 +49,15 @@ function retryInit(options={}) {
         const DEFAULT_SOCKET_TIMEOUT = parseInt(process.env.NODE_FETCH_RETRY_SOCKET_TIMEOUT) || 30000;
         const DEFAULT_FORCE_TIMEOUT = process.env.NODE_FETCH_RETRY_FORCE_TIMEOUT || false;
 
-        let retryMaxDuration = retryOptions.retryMaxDuration === undefined
-            ? DEFAULT_MAX_RETRY : retryOptions.retryMaxDuration;
+        let retryMaxDuration = retryOptions.retryMaxDuration !== undefined ? retryOptions.retryMaxDuration
+            : DEFAULT_MAX_RETRY;
         // take into account action timeout if running in the context of an OpenWhisk action
         const timeTillActionTimeout = process.env.__OW_ACTION_DEADLINE && ( process.env.__OW_ACTION_DEADLINE - Date.now()); // duration until action timeout
         if (timeTillActionTimeout && (retryMaxDuration > timeTillActionTimeout) ) {
             retryMaxDuration = timeTillActionTimeout;
         }
-        let socketTimeoutValue = retryOptions.socketTimeout === undefined ? DEFAULT_SOCKET_TIMEOUT
-            : retryOptions.socketTimeout;
+        let socketTimeoutValue = retryOptions.socketTimeout !== undefined ? retryOptions.socketTimeout
+            : DEFAULT_SOCKET_TIMEOUT;
         if (socketTimeoutValue >= retryMaxDuration) {
             socketTimeoutValue = retryMaxDuration * 0.5; // make socket timeout half of retryMaxDuration to force at least one retry
         }
