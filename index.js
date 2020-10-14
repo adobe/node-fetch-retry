@@ -158,7 +158,7 @@ module.exports = async function (url, options) {
             ++attempt;
 
             let timeoutHandler;
-            if (retryOptions.socketTimeout) {
+            if (retryOptions !== false && retryOptions.socketTimeout) {
                 const controller = new AbortController();
                 timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
                 options.signal = controller.signal;
