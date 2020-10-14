@@ -49,17 +49,20 @@ function retryInit(options={}) {
         const DEFAULT_SOCKET_TIMEOUT = parseInt(process.env.NODE_FETCH_RETRY_SOCKET_TIMEOUT) || 30000;
         const DEFAULT_FORCE_TIMEOUT = process.env.NODE_FETCH_RETRY_FORCE_TIMEOUT || false;
 
-        let retryMaxDuration = retryOptions.retryMaxDuration || DEFAULT_MAX_RETRY;
+        let retryMaxDuration = retryOptions.retryMaxDuration === undefined
+            ? DEFAULT_MAX_RETRY : retryOptions.retryMaxDuration;
         // take into account action timeout if running in the context of an OpenWhisk action
         const timeTillActionTimeout = process.env.__OW_ACTION_DEADLINE && ( process.env.__OW_ACTION_DEADLINE - Date.now()); // duration until action timeout
         if (timeTillActionTimeout && (retryMaxDuration > timeTillActionTimeout) ) {
             retryMaxDuration = timeTillActionTimeout;
         }
-        let socketTimeoutValue = retryOptions.socketTimeout || DEFAULT_SOCKET_TIMEOUT;
+        let socketTimeoutValue = retryOptions.socketTimeout === undefined ? DEFAULT_SOCKET_TIMEOUT
+            : retryOptions.socketTimeout;
         if (socketTimeoutValue >= retryMaxDuration) {
             socketTimeoutValue = retryMaxDuration * 0.5; // make socket timeout half of retryMaxDuration to force at least one retry
         }
-        if ((retryOptions.forceSocketTimeout || (DEFAULT_FORCE_TIMEOUT === 'true') || DEFAULT_FORCE_TIMEOUT === true)) { // for unit test only - test also for boolean type
+        if ((retryOptions.forceSocketTimeout !== undefined ? retryOptions.forceSocketTimeout :
+            (DEFAULT_FORCE_TIMEOUT === 'true') || DEFAULT_FORCE_TIMEOUT === true)) { // for unit test only - test also for boolean type
             // force the use of set timeout, do not ignore if larger than retryMaxDuration
             console.log('Forced to use socket timeout of (ms):', retryOptions.socketTimeout);
             socketTimeoutValue = retryOptions.socketTimeout;
@@ -68,8 +71,9 @@ function retryInit(options={}) {
         return {
             startTime: Date.now(),
             retryMaxDuration: retryMaxDuration,
-            retryInitialDelay: retryOptions.retryInitialDelay || DEFAULT_INITIAL_WAIT,
-            retryBackoff: retryOptions.retryBackoff || DEFAULT_BACKOFF,
+            retryInitialDelay: retryOptions.retryInitialDelay !== undefined ? retryOptions.retryInitialDelay
+                : DEFAULT_INITIAL_WAIT,
+            retryBackoff: retryOptions.retryBackoff !== undefined ? retryOptions.retryBackoff : DEFAULT_BACKOFF,
             retryOnHttpResponse: ((typeof retryOptions.retryOnHttpResponse === 'function') && retryOptions.retryOnHttpResponse) ||
                 ((response) => { return response.status >= 500; }),
             socketTimeout: socketTimeoutValue
@@ -96,20 +100,24 @@ function retryDelay(retryOptions, random = true) {
  */
 
 function checkParameters(retryOptions) {
-    if (retryOptions.retryMaxDuration && !(Number.isInteger(retryOptions.retryMaxDuration) && retryOptions.retryMaxDuration >= 0)) {
+    if (retryOptions.retryMaxDuration !== undefined
+        && !(Number.isInteger(retryOptions.retryMaxDuration) && retryOptions.retryMaxDuration >= 0)) {
         throw new Error('`retryMaxDuration` must not be a negative integer');
     }
-    if (retryOptions.retryInitialDelay && !(Number.isInteger(retryOptions.retryInitialDelay) && retryOptions.retryInitialDelay >= 0)) {
+    if (retryOptions.retryInitialDelay !== undefined
+        && !(Number.isInteger(retryOptions.retryInitialDelay) && retryOptions.retryInitialDelay >= 0)) {
         throw new Error('`retryInitialDelay` must not be a negative integer');
     }
-    if (retryOptions.retryOnHttpResponse && !(typeof retryOptions.retryOnHttpResponse === 'function')) {
+    if (retryOptions.retryOnHttpResponse !== undefined
+        && !(typeof retryOptions.retryOnHttpResponse === 'function')) {
         throw new Error(`'retryOnHttpResponse' must be a function: ${retryOptions.retryOnHttpResponse}`);
     }
-    if (typeof retryOptions.retryBackoff !== 'undefined'
+    if (retryOptions.retryBackoff !== undefined
         && !(Number.isInteger(retryOptions.retryBackoff) && retryOptions.retryBackoff >= 1.0)) {
         throw new Error('`retryBackoff` must be a positive integer >= 1');
     }
-    if (retryOptions.socketTimeout && !(Number.isInteger(retryOptions.socketTimeout) && retryOptions.socketTimeout >= 0)) {
+    if (retryOptions.socketTimeout !== undefined
+        && !(Number.isInteger(retryOptions.socketTimeout) && retryOptions.socketTimeout >= 0)) {
         throw new Error('`socketTimeout` must not be a negative integer');
     }
 }
