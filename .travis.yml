@@ -25,8 +25,23 @@ install:
   - npm version
   - npm install
 
-script:
-  - npm test
+jobs:
+  include:
+    - stage: Test
+      script: npm test
+    - stage: release
+      if: branch = master
+      node_js: "12"
+      script: skip
+      before_deploy:
+        - "echo 'semantic release...'"
+      deploy:
+        on:
+          branch: master
+          condition:  $TRAVIS_OS_NAME == linux
+        provider: script
+        skip_cleanup: true
+        script: npx semantic-release --debug
 
 after_success:
   - npm run report-coverage
