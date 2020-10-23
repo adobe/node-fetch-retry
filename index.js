@@ -158,7 +158,6 @@ module.exports = async function (url, options) {
 
             try {
                 const response = await fetch(url, options);
-
                 clearTimeout(timeoutHandler);
 
                 if (!retry(retryOptions, null, response)) {
