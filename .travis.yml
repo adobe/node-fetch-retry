@@ -10,8 +10,8 @@
 
 language: node_js
 os:
-  - windows
   - linux
+  - windows
   - osx
 
 node_js:
