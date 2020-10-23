@@ -30,7 +30,8 @@
     "fetch",
     "retry",
     "adobe",
-    "http"
+    "http",
+    "node-fetch"
   ],
   "scripts": {
     "test": "nyc mocha --recursive --exit",
