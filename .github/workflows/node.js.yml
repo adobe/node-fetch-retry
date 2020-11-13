@@ -13,8 +13,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    container: 
-      image: centos:7
 
     strategy:
       matrix:
@@ -26,6 +24,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - run: uname -a
     - run: npm ci
     - run: npm run build --if-present
     - run: npm test
