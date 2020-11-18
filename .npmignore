@@ -6,6 +6,7 @@ test/
 .circleci
 .eslintrc.js
 .eslintignore
+.releaserc.json
 stryker.conf.js
 build/
 .travis.yml
