@@ -37,6 +37,7 @@
     "test": "nyc mocha --recursive --exit",
     "posttest": "eslint . && license-checker --summary",
     "report-coverage": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
-    "beautify": "eslint . --fix"
+    "beautify": "eslint . --fix",
+    "semantic-release": "semantic-release"
   }
 }
