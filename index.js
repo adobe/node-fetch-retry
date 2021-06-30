@@ -178,7 +178,7 @@ function checkParameters(retryOptions) {
  * @returns {Object} json response of calling fetch 
  */
 module.exports = async function (url, options) {
-    options = options || {};
+    options = {...options} || {};
     const retryOptions = retryInit(options); // set up retry options or set to default settings if not set
     delete options.retryOptions; // remove retry options from options passed to actual fetch
     let attempt = 0;
