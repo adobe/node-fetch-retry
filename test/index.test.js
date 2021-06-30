@@ -729,4 +729,20 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`);
         assert.strictEqual(response.ok, true);
     });
+    
+    it('doesn\'t modify the passed in options', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        
+        const options = {
+            retryOptions: {
+                retryMaxDuration: 3000
+            }
+        };
+        
+        await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, options);
+
+        assert.strictEqual(options.retryOptions.retryMaxDuration, 3000);
+    });
 });
