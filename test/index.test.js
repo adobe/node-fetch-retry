@@ -202,9 +202,9 @@ describe('test fetch retry', () => {
             .reply(200, { ok: true });
 
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
-            { 
-                method: 'GET', 
-                headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' } 
+            {
+                method: 'GET',
+                headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }
             }
         );
         assert.strictEqual(response.ok, true);
@@ -217,9 +217,9 @@ describe('test fetch retry', () => {
             .reply(200, { ok: true });
 
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
-            { 
-                method: 'GET', 
-                headers: { Authorization: 'Bearer thisShouldBeAToken' } 
+            {
+                method: 'GET',
+                headers: { Authorization: 'Bearer thisShouldBeAToken' }
             }
         );
         assert.strictEqual(response.ok, true);
@@ -256,9 +256,9 @@ describe('test fetch retry', () => {
             .reply(401, { ok: false });
 
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
-            { 
-                method: 'GET', 
-                headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' } 
+            {
+                method: 'GET',
+                headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }
             }
         );
         assert.strictEqual(response.ok, false);
@@ -269,7 +269,7 @@ describe('test fetch retry', () => {
             .get(FAKE_PATH)
             .reply(500);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: false });
-        assert.strictEqual(response.statusText, 'Internal Server Error');
+        assert.strictEqual(response.statusText, '');
     });
 
     it('test get retry with default settings 500 then 200', async () => {
@@ -283,7 +283,7 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(response.ok);
-        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 200);
     });
 
@@ -297,13 +297,13 @@ describe('test fetch retry', () => {
             .get(FAKE_PATH)
             .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
             .reply(200, { ok: true });
-        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, 
-            { 
-                method: 'GET', headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }  
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            {
+                method: 'GET', headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }
             });
         assert(nock.isDone());
         assert(response.ok);
-        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 200);
     });
 
@@ -314,7 +314,7 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(!response.ok);
-        assert.strictEqual(response.statusText, 'Bad Request');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 400);
     });
 
@@ -325,7 +325,7 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(!response.ok);
-        assert.strictEqual(response.statusText, 'Not Found');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 404);
     });
 
@@ -336,7 +336,7 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
         assert(!response.ok);
-        assert.strictEqual(response.statusText, 'Multiple Choices');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 300);
     });
 
@@ -353,7 +353,7 @@ describe('test fetch retry', () => {
             .reply(200, { ok: true });
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
         assert(nock.isDone());
-        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 200);
     });
 
@@ -388,7 +388,7 @@ describe('test fetch retry', () => {
             }
         });
         assert(nock.isDone());
-        assert.strictEqual(response.statusText, 'Not Found');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 404);
     });
 
@@ -406,7 +406,7 @@ describe('test fetch retry', () => {
             });
         assert(!nock.isDone()); // should fail on first fetch call
         nock.cleanAll();
-        assert.strictEqual(response.statusText, 'HTTP Version Not Supported');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 505);
     });
 
@@ -429,7 +429,7 @@ describe('test fetch retry', () => {
                 }
             });
         assert(nock.isDone());
-        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 200);
     });
 
@@ -452,7 +452,7 @@ describe('test fetch retry', () => {
                 }
             });
         assert(!nock.isDone()); // nock should not have gotten all calls
-        assert.strictEqual(response.statusText, 'Unauthorized');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 401);
 
         // clean up nock
@@ -470,7 +470,7 @@ describe('test fetch retry', () => {
             .reply(200);
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
             {
-                method: 'GET', 
+                method: 'GET',
                 headers: {
                     Authorization: 'Basic thisShouldBeAnAuthHeader'
                 },
@@ -483,7 +483,7 @@ describe('test fetch retry', () => {
                 }
             });
         assert(!nock.isDone()); // nock should not have gotten all calls
-        assert.strictEqual(response.statusText, 'Unauthorized');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 401);
 
         // clean up nock
@@ -505,7 +505,7 @@ describe('test fetch retry', () => {
             });
         assert(nock.isDone());
         nock.cleanAll(); // clean persisted nock
-        assert.strictEqual(response.statusText, 'Not Found');
+        assert.strictEqual(response.statusText, '');
         assert.strictEqual(response.status, 404);
 
     }).timeout(3000);

@@ -60,6 +60,9 @@ typings/
 .vscode
 !.vscode/launch.json
 
+# Webstorm
+.idea
+
 # serverless
 .serverless/action.zip
 .webpack
