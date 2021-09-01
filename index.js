@@ -12,8 +12,6 @@
 'use strict';
 
 const AbortController = require('abort-controller');
-const fetch = require('node-fetch');
-const {FetchError} = fetch;
 
 /**
  * Retry
@@ -137,7 +135,7 @@ function checkParameters(retryOptions) {
  * Fetch retry that wraps around `node-fetch` library
  * @param {String} url request url
  * @param {Options} options options for fetch request (e.g. headers, RetryOptions for retries or `false` if no do not want to perform retries)
- * @returns {Object} json response of calling fetch 
+ * @returns {Object} json response of calling fetch
  */
 module.exports = async function (url, options) {
     options = options || {};
@@ -157,7 +155,7 @@ module.exports = async function (url, options) {
             }
 
             try {
-                const response = await fetch(url, options);
+                const response = await import('node-fetch').then( ({ default: fetch }) => fetch(url, options));
                 clearTimeout(timeoutHandler);
 
                 if (!retry(retryOptions, null, response)) {
@@ -172,6 +170,7 @@ module.exports = async function (url, options) {
 
                 if (!retry(retryOptions, error, null)) {
                     if (error.name === 'AbortError') {
+                        const FetchError = await import('node-fetch').then( ({ FetchError }) => FetchError);
                         return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
                     }
 
