@@ -166,7 +166,7 @@ module.exports = async function (url, options) {
                     return resolve(response);
                 }
 
-                console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} failed (status ${response.status}): ${response.statusText}`);
+                console.error(`Retrying ${url} in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} failed (status ${response.status}): ${response.statusText}`);
             } catch (error) {
                 clearTimeout(timeoutHandler);
 
@@ -178,7 +178,7 @@ module.exports = async function (url, options) {
                     return reject(error);
                 }
 
-                console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} error: ${error.message}`);
+                console.error(`Retrying ${url} in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} error: ${error.message}`);
             }
 
             retryOptions.retryInitialDelay *= retryOptions.retryBackoff; // update retry interval
