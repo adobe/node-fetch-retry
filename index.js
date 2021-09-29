@@ -15,21 +15,40 @@ const AbortController = require('abort-controller');
 const fetch = require('node-fetch');
 const {FetchError} = fetch;
 
+function getTimeRemaining(retryOptions) {
+    if (retryOptions && retryOptions.startTime && retryOptions.retryMaxDuration) {
+        const millisEllapsed = Date.now() - retryOptions.startTime;        
+        const remaining = retryOptions.retryMaxDuration - millisEllapsed;
+        return Math.max(0, remaining);
+    } else {
+        return Infinity;
+    }
+}
+
 /**
- * Retry
+ * Have we exceeded the max duration for this fetch operation?
+ * @param {*} retryOptions Options including retryMaxDuration and startTime
+ * @returns True if we have a max duration set and it is exceeded, otherwise false
+ */
+function isResponseTimedOut(retryOptions) {
+    return getTimeRemaining(retryOptions) <= 0;
+}
+
+/**
+ * shouldRetry
  * @param {RetryOptions} retryOptions whether or not to retry on all http error codes or just >500
  * @param {Object} error error object if the fetch request returned an error
  * @param {Object} response fetch call response
  * @returns {Boolean} whether or not to retry the request
  */
-function retry(retryOptions, error, response) {
-    if (retryOptions) {
-        const totalMillisToWait = (retryOptions.retryInitialDelay) + (Date.now() - retryOptions.startTime);
-        return ((totalMillisToWait < retryOptions.retryMaxDuration) &&
-            (error !== null || (retryOptions.retryOnHttpResponse && (retryOptions.retryOnHttpResponse(response))))
-        );
+function shouldRetry(retryOptions, error, response) {
+    if (isResponseTimedOut(retryOptions)) {
+        return false;
+    } else if (retryOptions && retryOptions.retryOnHttpResponse) {
+        return retryOptions.retryOnHttpResponse(response);
+    } else {
+        return false;
     }
-    return false;
 }
 
 /**
@@ -84,7 +103,7 @@ function retryInit(options={}) {
  * @param {RetryOptions|Boolean} retryOptions Retry options
  * @param {Boolean} [random=true] Add randomness
  */
-function retryDelay(retryOptions, random = true) {
+function getRetryDelay(retryOptions, random = true) {
     return retryOptions.retryInitialDelay +
         (random ? Math.floor(Math.random() * 100) : 99);
 }
@@ -147,43 +166,54 @@ module.exports = async function (url, options) {
 
     return new Promise(function (resolve, reject) {
         const wrappedFetch = async () => {
-            ++attempt;
+            let response;
+            while (!isResponseTimedOut(retryOptions)) {
+                ++attempt;
 
-            let timeoutHandler;
-            if (retryOptions.socketTimeout) {
-                const controller = new AbortController();
-                timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
-                options.signal = controller.signal;
-            }
+                let timeoutHandler;
+                if (retryOptions.socketTimeout) {
+                    const controller = new AbortController();
+                    timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
+                    options.signal = controller.signal;
+                }                
+    
+                try {
+                    // console.log(`Fetching ${url} attempt ${attempt}`);
+                    response = await fetch(url, options);
 
-            try {
-                const response = await fetch(url, options);
-                clearTimeout(timeoutHandler);
-
-                if (!retry(retryOptions, null, response)) {
-                    // response.timeout should reflect the actual timeout
-                    response.timeout = retryOptions.socketTimeout;
-                    return resolve(response);
-                }
-
-                console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} failed (status ${response.status}): ${response.statusText}`);
-            } catch (error) {
-                clearTimeout(timeoutHandler);
-
-                if (!retry(retryOptions, error, null)) {
-                    if (error.name === 'AbortError') {
-                        return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
+                    if (shouldRetry(retryOptions, null, response)) {
+                        console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
+                    } else {
+                        // response.timeout should reflect the actual timeout
+                        response.timeout = retryOptions.socketTimeout;
+                        return resolve(response);
+                    }
+                } catch (error) {
+                    response = {status: error.code || 500, statusMessage : error.message || "Unknown server error"};
+                    if (!shouldRetry(retryOptions, error, response)) {
+                        if (error.name === 'AbortError') {
+                            return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
+                        } else {
+                            return reject(error);
+                        }
                     }
 
-                    return reject(error);
+                    console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt} error: ${error.message}`);
+                } finally {
+                    clearTimeout(timeoutHandler);
                 }
 
-                console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} error: ${error.message}`);
+                // Fetch loop is about to repeat, delay as needed first.
+                const waitTime = getRetryDelay(retryOptions);
+                if (getTimeRemaining(retryOptions) < waitTime) {
+                    console.error(`Timeout during retry delay, returning last received response`);
+                    resolve(response);
+                    break;
+                } else if (waitTime > 0) {
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+                retryOptions.retryInitialDelay *= retryOptions.retryBackoff; // update retry interval
             }
-
-            retryOptions.retryInitialDelay *= retryOptions.retryBackoff; // update retry interval
-            const waitTime = retryDelay(retryOptions);
-            setTimeout(() => { wrappedFetch(); }, waitTime);
         };
         wrappedFetch();
     });

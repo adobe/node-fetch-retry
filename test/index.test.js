@@ -355,7 +355,7 @@ describe('test fetch retry', () => {
         assert(nock.isDone());
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
-    });
+    }).timeout(3000);
 
     it('test retry timeout on error 503', async () => {
         nock(FAKE_BASE_URL)
@@ -366,7 +366,7 @@ describe('test fetch retry', () => {
                 code: '503',
             });
         try {
-            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 1000 } });
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 800 } });
         } catch (e) {
             assert(nock.isDone());
             assert.strictEqual(e.message, 'request to https://fakeurl.com/image/test.png failed, reason: something awful happened');
@@ -383,7 +383,7 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, {
             method: 'GET',
             retryOptions: {
-                retryMaxDuration: 1000,
+                retryMaxDuration: 800,
                 retryOnHttpResponse: (res) => { return !res.ok; }
             }
         });
@@ -717,6 +717,7 @@ describe('test fetch retry', () => {
 
         const result = await fetch(`http://${hostname}:${port}`, { method: 'GET', retryOptions: retry });
         assert.ok(result.status === 200);
+        console.error(`result timeout ${result.timeout} vs socketTimeout ${socketTimeout}`);
         assert.ok(result.timeout === socketTimeout);
 
         server.close();
