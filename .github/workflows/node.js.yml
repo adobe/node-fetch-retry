@@ -1,0 +1,54 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Node.js Test CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    strategy:
+      matrix:
+        node-version: [10.16, 10.19, 12.16, 12.19]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm ci
+    - run: npm test
+    - run: npm run report-coverage
+
+  sizewatcher:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[ci skip]')"
+    steps:
+    - uses: actions/checkout@v2
+    - run: npx @adobe/sizewatcher
+  semantic-release:
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: ${{  !contains(github.event.head_commit.message, '[ci skip]') && github.ref == 'refs/heads/master' }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Use Node.js 12.19
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.19'
+      - run: npm install
+      - run: npm run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.ADOBE_BOT_GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.ADOBE_BOT_NPM_TOKEN }}
+          
