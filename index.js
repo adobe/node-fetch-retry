@@ -166,7 +166,7 @@ module.exports = async function (url, options) {
 
     return new Promise(function (resolve, reject) {
         const wrappedFetch = async () => {
-            let response;
+            let processLastResult = ()=>{};
             while (!isResponseTimedOut(retryOptions)) {
                 ++attempt;
 
@@ -179,7 +179,8 @@ module.exports = async function (url, options) {
     
                 try {
                     // console.log(`Fetching ${url} attempt ${attempt}`);
-                    response = await fetch(url, options);
+                    const response = await fetch(url, options);
+                    processLastResult = ()=>resolve(response);
 
                     if (shouldRetry(retryOptions, null, response)) {
                         console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
@@ -189,7 +190,8 @@ module.exports = async function (url, options) {
                         return resolve(response);
                     }
                 } catch (error) {
-                    response = {status: error.code || 500, statusMessage : error.message || "Unknown server error"};
+                    processLastResult = ()=>reject(error);
+                    const response = {status: error.code || 500, statusMessage : error.message || "Unknown server error"};
                     if (!shouldRetry(retryOptions, error, response)) {
                         if (error.name === 'AbortError') {
                             return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
@@ -197,7 +199,6 @@ module.exports = async function (url, options) {
                             return reject(error);
                         }
                     }
-
                     console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt} error: ${error.message}`);
                 } finally {
                     clearTimeout(timeoutHandler);
@@ -207,7 +208,7 @@ module.exports = async function (url, options) {
                 const waitTime = getRetryDelay(retryOptions);
                 if (getTimeRemaining(retryOptions) < waitTime) {
                     console.error(`Timeout during retry delay, returning last received response`);
-                    resolve(response);
+                    processLastResult();
                     break;
                 } else if (waitTime > 0) {
                     await new Promise(resolve => setTimeout(resolve, waitTime));
