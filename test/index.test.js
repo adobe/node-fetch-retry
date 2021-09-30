@@ -27,6 +27,20 @@ const getPort = require('get-port');
 const FAKE_BASE_URL = 'https://fakeurl.com';
 const FAKE_PATH = '/image/test.png';
 
+class Timer {
+    constructor() {
+        this.start = Date.now();
+    }
+
+    get ellapsed() {
+        return Date.now() - this.start;
+    }
+
+    isBetween(v1, v2) {
+        const answer = (this.ellapsed >= v1 && this.ellapsed <= v2);
+        return answer;
+    }
+}
 
 describe('test `retryInit` function', () => {
     afterEach(() => {
@@ -365,13 +379,17 @@ describe('test fetch retry', () => {
                 message: 'something awful happened',
                 code: '503',
             });
+        const timer = new Timer();
         try {
-            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 800 } });
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 700 } });
+            assert.fail("Should have thrown an error!");
         } catch (e) {
             assert(nock.isDone());
             assert.strictEqual(e.message, 'request to https://fakeurl.com/image/test.png failed, reason: something awful happened');
             assert.strictEqual(e.code, '503');
         }
+        console.log(`ellapsed: ${timer.ellapsed}`);
+        assert.ok(timer.isBetween(300, 500), "Should have taken approximately 400ms");
     });
 
     it('test retry timeout on 404 response', async () => {
@@ -397,6 +415,7 @@ describe('test fetch retry', () => {
             .get(FAKE_PATH)
             .twice()
             .reply(505);
+        const timer = new Timer();
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
             {
                 method: 'GET', retryOptions: {
@@ -404,6 +423,7 @@ describe('test fetch retry', () => {
                     retryMaxDuration: 1000
                 }
             });
+        assert.ok(timer.isBetween(0, 100), "Should have taken < 100ms");
         assert(!nock.isDone()); // should fail on first fetch call
         nock.cleanAll();
         assert.strictEqual(response.statusText, 'HTTP Version Not Supported');
