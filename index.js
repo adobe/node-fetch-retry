@@ -207,6 +207,7 @@ module.exports = async function (url, options) {
                 }
                 retryOptions.retryInitialDelay *= retryOptions.retryBackoff; // update retry interval
             }
+            reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
         };
         wrappedFetch();
     });
