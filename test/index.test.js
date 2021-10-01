@@ -401,7 +401,7 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, {
             method: 'GET',
             retryOptions: {
-                retryMaxDuration: 800,
+                retryMaxDuration: 500,
                 retryOnHttpResponse: (res) => { return !res.ok; }
             }
         });
