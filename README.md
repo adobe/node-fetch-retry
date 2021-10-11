@@ -22,7 +22,7 @@ This library works the same as the normal [`fetch api`](https://developer.mozill
 
 Without configuring any parameters, the retry behavior will be as follows:
 - retry for 60s
-- retry inital delay of 100ms with exponential backoff
+- retry inital delay of 100ms with exponential backoff, configurable as a multiplier defaulting to 2
 - retry only on 5xx response
 - socket timeout of 30s
 ```js
@@ -147,6 +147,9 @@ async main() {
 
 Disabling retry behavior will not prevent the usage of other options set on the `options` object.
 
+### Additional notes on retry duration
+
+If the fetch is unsucessful, the retry logic determines how long it will wait before the next attempt.  If the time remaining will exceed the total time allowed by retryMaxDuration then another attempt will not be made.  There are examples of how this works in the testing code.
 
 ### Apache OpenWhisk Action Support
 
