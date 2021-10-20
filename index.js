@@ -45,6 +45,8 @@ function isResponseTimedOut(retryOptions) {
 function shouldRetry(retryOptions, error, response, waitTime) {
     if (getTimeRemaining(retryOptions) < waitTime) {
         return false;
+    } else if (error !== null) {
+        return true;
     } else if (retryOptions && retryOptions.retryOnHttpResponse) {
         return retryOptions.retryOnHttpResponse(response);
     } else {
