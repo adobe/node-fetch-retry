@@ -135,6 +135,20 @@ function checkParameters(retryOptions) {
 }
 
 /**
+ * Format HTTP error response into response object
+ * @param {Object} error 
+ * @returns 
+ */
+function getResponseFromHttpError(error) {
+    let code = error.code;
+    if (!code || (typeof(code) !== 'number')) {
+        console.warn(`error code is invalid ${code}. Assuming error code is 500`);
+        code = 500;
+    }
+    return {status: code, statusMessage : error.message || "Unknown server error"};
+}
+
+/**
  * @typedef {Object} RetryOptions options for retry or false if want to disable retry
  * @property {Integer} retryMaxDuration time (in milliseconds) to retry until throwing an error
  * @property {Integer} retryInitialDelay time to wait between retries in milliseconds
@@ -189,7 +203,7 @@ module.exports = async function (url, options) {
                         return resolve(response);
                     }
                 } catch (error) {
-                    const response = {status: error.code || 500, statusMessage : error.message || "Unknown server error"};
+                    const response = getResponseFromHttpError(error);
                     if (!shouldRetry(retryOptions, error, response, waitTime)) {
                         if (error.name === 'AbortError') {
                             return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));

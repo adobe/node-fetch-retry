@@ -320,6 +320,28 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
     });
+    it('test get retry with default settings invalid error code then 200 with auth headers set', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .twice()
+            .replyWithError({
+                message: 'something awful happened',
+                code: 'INVALID ERROR CODE',
+            });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, 
+            { 
+                method: 'GET', headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }  
+            });
+        assert(nock.isDone());
+        assert(response.ok);
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
 
     it('test retry with default settings 400', async () => {
         nock(FAKE_BASE_URL)
