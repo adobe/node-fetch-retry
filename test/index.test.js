@@ -320,6 +320,28 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
     });
+    it('test get retry with default settings invalid error code then 200 with auth headers set', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .twice()
+            .replyWithError({
+                message: 'something awful happened',
+                code: 'INVALID ERROR CODE',
+            });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, 
+            { 
+                method: 'GET', headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }  
+            });
+        assert(nock.isDone());
+        assert(response.ok);
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
 
     it('test retry with default settings 400', async () => {
         nock(FAKE_BASE_URL)
@@ -390,6 +412,32 @@ describe('test fetch retry', () => {
         }
         console.log(`ellapsed: ${timer.ellapsed}`);
         assert.ok(timer.isBetween(300, 500), "Should have taken approximately 400ms");
+    });
+    it('test network timeout', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .once()
+            .replyWithError({
+                message: 'something awful happened',
+                code: '503',
+            });
+        const timer = new Timer();
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert(e.message.includes("network timeout"));
+            assert(e.type === "request-timeout");
+        }
+        console.log(`ellapsed: ${timer.ellapsed}`);
+        assert.ok(timer.isBetween(1, 100), "Should have taken approximately 10ms");
+    });
+    it('test network timeout 200', async () => {
+        nock(FAKE_BASE_URL)
+            .put(FAKE_PATH, 'hello')
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'PUT', body: 'hello', retryOptions: { retryMaxDuration: 1000 } });
+        assert.strictEqual(response.ok, true);
     });
 
     it('test retry timeout on 404 response', async () => {
