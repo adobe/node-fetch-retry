@@ -141,8 +141,8 @@ function checkParameters(retryOptions) {
  */
 function getResponseFromHttpError(error) {
     let code = error.code;
-    if (!code || (typeof(code) !== 'number')) {
-        console.warn(`error code is invalid ${code}. Assuming error code is 500`);
+    if (!code || typeof(code) !== 'number') {
+        console.warn(`error code is invalid ${code}. Setting status code to 500`);
         code = 500;
     }
     return {status: code, statusMessage : error.message || "Unknown server error"};
