@@ -45,6 +45,8 @@ function isResponseTimedOut(retryOptions) {
 function shouldRetry(retryOptions, error, response, waitTime) {
     if (getTimeRemaining(retryOptions) < waitTime) {
         return false;
+    } else if (retryOptions && retryOptions.retryOnHttpError && error != null) {
+        return retryOptions.retryOnHttpError(error);
     } else if (retryOptions && retryOptions.retryOnHttpResponse) {
         return retryOptions.retryOnHttpResponse(response);
     } else {
@@ -92,6 +94,8 @@ function retryInit(options={}) {
             retryBackoff: retryOptions.retryBackoff || DEFAULT_BACKOFF,
             retryOnHttpResponse: ((typeof retryOptions.retryOnHttpResponse === 'function') && retryOptions.retryOnHttpResponse) ||
                 ((response) => { return response.status >= 500; }),
+            retryOnHttpError: ((typeof retryOptions.retryOnHttpError === 'function') && retryOptions.retryOnHttpError) ||
+                ((error) => { return shouldRetryOnHttpError(error); }),
             socketTimeout: socketTimeoutValue
         };
     }
@@ -125,6 +129,9 @@ function checkParameters(retryOptions) {
     if (retryOptions.retryOnHttpResponse && !(typeof retryOptions.retryOnHttpResponse === 'function')) {
         throw new Error(`'retryOnHttpResponse' must be a function: ${retryOptions.retryOnHttpResponse}`);
     }
+    if (retryOptions.retryOnHttpError && !(typeof retryOptions.retryOnHttpError === 'function')) {
+        throw new Error(`'retryOnHttpError' must be a function: ${retryOptions.retryOnHttpError}`);
+    }
     if (typeof retryOptions.retryBackoff !== 'undefined'
         && !(Number.isInteger(retryOptions.retryBackoff) && retryOptions.retryBackoff >= 1.0)) {
         throw new Error('`retryBackoff` must be a positive integer >= 1');
@@ -139,13 +146,14 @@ function checkParameters(retryOptions) {
  * @param {Object} error 
  * @returns 
  */
-function getResponseFromHttpError(error) {
-    let code = error.code;
-    if (!code || typeof(code) !== 'number') {
-        console.warn(`error code is invalid ${code}. Setting status code to 500`);
-        code = 500;
+function shouldRetryOnHttpError(error) {
+    // special handling for known fetch errors: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
+    // retry on all errors originating from Node.js core
+    if (error.name === 'FetchError' && error.type === 'system') {
+        console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
+        return true;
     }
-    return {status: code, statusMessage : error.message || "Unknown server error"};
+    return false;
 }
 
 /**
@@ -153,6 +161,7 @@ function getResponseFromHttpError(error) {
  * @property {Integer} retryMaxDuration time (in milliseconds) to retry until throwing an error
  * @property {Integer} retryInitialDelay time to wait between retries in milliseconds
  * @property {Function} retryOnHttpResponse a function determining whether to retry on a specific HTTP code
+ * @property {Function} retryOnHttpError a function determining whether to retry on a specific HTTP error
  * @property {Integer} retryBackoff backoff factor for wait time between retries (defaults to 2.0)
  * @property {Integer} socketTimeout Optional socket timeout in milliseconds (defaults to 60000ms)
  * @property {Boolean} forceSocketTimeout If true, socket timeout will be forced to use `socketTimeout` property declared (defaults to false)
@@ -161,6 +170,11 @@ function getResponseFromHttpError(error) {
  * @typedef {Function} retryOnHttpResponse determines whether to do a retry on the response
  * @property {Number} response response from the http fetch call
  * @returns {Boolean} true if want to retry on this response, false if do not want to retry on the response
+ */
+/**
+ * @typedef {Function} retryOnHttpError determines whether to do a retry on the HTTP error response
+ * @property {Object} error error thrown during the fetch request
+ * @returns {Boolean} true if want to retry on this error, false if do not want to retry on the response
  */
 /**
  * @typedef {Object} Options options for fetch-retry
@@ -203,15 +217,14 @@ module.exports = async function (url, options) {
                         return resolve(response);
                     }
                 } catch (error) {
-                    const response = getResponseFromHttpError(error);
-                    if (!shouldRetry(retryOptions, error, response, waitTime)) {
+                    if (!shouldRetry(retryOptions, error, null, waitTime)) {
                         if (error.name === 'AbortError') {
                             return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
                         } else {
                             return reject(error);
                         }
                     }
-                    console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} error: ${error.message}`);
+                    console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} error: ${error.name}, ${error.message}`);
                 } finally {
                     clearTimeout(timeoutHandler);
                 }

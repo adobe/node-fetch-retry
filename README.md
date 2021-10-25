@@ -24,6 +24,8 @@ Without configuring any parameters, the retry behavior will be as follows:
 - retry for 60s
 - retry inital delay of 100ms with exponential backoff, configurable as a multiplier defaulting to 2
 - retry only on 5xx response
+- retry on all FetchError system errors
+   - see node-fetch error handling: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
 - socket timeout of 30s
 ```js
 const fetch = require('@adobe/node-fetch-retry');
@@ -57,6 +59,7 @@ All the retry options are configurable and can be set in `retryOptions` in the `
 | `retryInitialDelay` | Number | time in milliseconds to wait between retries |`NODE_FETCH_RETRY_INITIAL_WAIT` | 100 ms |
 | `retryBackoff` | Number | backoff factor for wait time between retries | `NODE_FETCH_RETRY_BACKOFF` | 2.0 |
 | `retryOnHttpResponse` | Function | a *function* determining whether to retry given the HTTP response | none | retry on all 5xx errors|
+| `retryOnHttpError` | Function | a *function* determining whether to retry given the HTTP error exception thrown | none | retry on all `FetchError`'s of type `system`|
 | `socketTimeout` | Number | time until socket timeout in milliseconds. _Note: if `socketTimeout` is >= `retryMaxDuration`, it will automatically adjust the socket timeout to be exactly half of the `retryMaxDuration`. To disable this feature, see `forceSocketTimeout` below_ | `NODE_FETCH_RETRY_SOCKET_TIMEOUT` | 30000 ms |
 | `forceSocketTimeout` | Boolean | If true, socket timeout will be forced to use `socketTimeout` property declared regardless of the `retryMaxDuration`. _Note: this feature was designed to help with unit testing and is not intended to be used in practice_ | `NODE_FETCH_RETRY_FORCE_TIMEOUT` | false |
 
@@ -125,6 +128,20 @@ async main() {
         },
         headers: {
             'custom-header': '<<put custom header value here>>'
+        }
+    });
+}
+```
+This example shows how to retry on all HTTP errors thrown as an exception:
+```js
+const fetch = require('@adobe/node-fetch-retry');
+
+async main() {
+    const response = await fetch(url, {
+        retryOptions: {
+            retryOnHttpError: function (error) {
+                return true;
+            }
         }
     });
 }
