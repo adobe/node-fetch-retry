@@ -239,20 +239,6 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
         assert.strictEqual(retryOptions.retryOnHttpError(new SpecialError('error!')), true);
     });
-    it('custom retry on http response is not a valid function', () => {
-        const rewiredFetchRetry = rewire('../index');
-        const retryInit = rewiredFetchRetry.__get__('retryInit');
-        try {
-            retryInit({
-                retryOptions: {
-                    retryOnHttpError: 'hello!'
-                }
-            });
-            assert.fail('Should have failed');
-        } catch (error) {
-            assert.strictEqual(error.message, "'retryOnHttpError' must be a function: hello!");
-        }
-    });
 });
 
 describe('test fetch retry', () => {
@@ -585,6 +571,13 @@ describe('test fetch retry', () => {
             threw = true;
         }
         assert.ok(threw);
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryOnHttperror: 123425 } });
+        } catch (e) {
+            assert.strictEqual(e.message, "'retryOnHttpError' must be a function: 123425");
+            threw = true;
+        }
+        assert.ok(threw);
 
         threw = false;
         try {
@@ -864,6 +857,22 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
         }
         console.log(`ellapsed: ${timer.ellapsed}`);
         assert.ok(timer.isBetween(1, 100), "Should have taken approximately 10ms");
+    });
+    it('test network timeout [mocked]', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(5000) // 2 seconds
+            .reply(200);
+        const timer = new Timer();
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert(e.message.includes("network timeout"));
+            assert(e.type === "request-timeout");
+        }
+        console.log(`ellapsed: ${timer.ellapsed}`);
+        assert.ok(timer.isBetween(1000, 1500), "Should have taken approximately 1s");
     });
     it('timeout retrying on error ECONNRESET', async () => {
         const systemError = new FetchError('socket hang up', 'system', {
