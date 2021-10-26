@@ -142,9 +142,9 @@ function checkParameters(retryOptions) {
 }
 
 /**
- * Format HTTP error response into response object
+ * Evaluates whether or not to retry based on HTTP error
  * @param {Object} error 
- * @returns 
+ * @returns Returns true for all FetchError's of type `system`
  */
 function shouldRetryOnHttpError(error) {
     // special handling for known fetch errors: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md

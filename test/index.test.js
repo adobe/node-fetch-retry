@@ -998,27 +998,3 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
         assert.strictEqual(response.status, 200);
     });
 });
-
-describe('test fetch retry -- load', () => {
-    afterEach(() => {
-        assert(nock.isDone);
-        nock.cleanAll();
-    });
-
-    it('test retry with small interval', async () => {
-        nock(FAKE_BASE_URL)
-            .persist()
-            .get(FAKE_PATH)
-            .reply(404);
-        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
-            {
-                method: 'GET'
-            });
-        assert(nock.isDone());
-        nock.cleanAll(); // clean persisted nock
-        assert.strictEqual(response.statusText, 'Not Found');
-        assert.strictEqual(response.status, 404);
-
-    }).timeout(60000);
-
-});
