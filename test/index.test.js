@@ -571,8 +571,10 @@ describe('test fetch retry', () => {
             threw = true;
         }
         assert.ok(threw);
+        
+        threw = false;
         try {
-            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryOnHttperror: 123425 } });
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryOnHttpError: 123425 } });
         } catch (e) {
             assert.strictEqual(e.message, "'retryOnHttpError' must be a function: 123425");
             threw = true;
