@@ -965,7 +965,7 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
             await fetch('http://domain.invalid', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
             assert.fail("Should have thrown an error!");
         } catch (e) {
-            assert.strictEqual(e.message, 'request to http://domain.invalid/ failed, reason: getaddrinfo ENOTFOUND domain.invalid');
+            assert.ok(e.message.includes('getaddrinfo ENOTFOUND'));
             assert.strictEqual(e.code, 'ENOTFOUND');
         }
     }).timeout(3000);
