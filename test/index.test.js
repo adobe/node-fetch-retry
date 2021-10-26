@@ -960,7 +960,7 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
     }).timeout(3000);
-    it('timeout retrying on ENOTFOUND (not mocked)', async () => {
+    it.skip('timeout retrying on ENOTFOUND (not mocked)', async () => {
         try {
             await fetch('http://domain.invalid', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
             assert.fail("Should have thrown an error!");
