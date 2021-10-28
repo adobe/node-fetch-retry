@@ -892,6 +892,8 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
             assert(nock.isDone());
             assert.strictEqual(e.message, 'request to https://fakeurl.com/image/test.png failed, reason: socket hang up');
             assert.strictEqual(e.code, 'ECONNRESET');
+            assert.strictEqual(e.type, 'system');
+            assert.strictEqual(e.name, 'FetchError');
         }
         console.log(`ellapsed: ${timer.ellapsed}`);
         assert.ok(timer.isBetween(300, 500), "Should have taken approximately 400ms");
@@ -960,15 +962,6 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
     }).timeout(3000);
-    it.skip('timeout retrying on ENOTFOUND (not mocked)', async () => {
-        try {
-            await fetch('http://domain.invalid', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
-            assert.fail("Should have thrown an error!");
-        } catch (e) {
-            assert.ok(e.message.includes('getaddrinfo ENOTFOUND'));
-            assert.strictEqual(e.code, 'ENOTFOUND');
-        }
-    }).timeout(3000);
 
     it('succeed after retry -- node-fetch wraps non-system errors in FetchError', async () => {
         const error = new Error('Parse Error: Response overflow');
@@ -996,5 +989,56 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
         assert(nock.isDone());
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
+    });
+});
+
+describe('test fetch retry on http errors (not mocked)', () => {
+    it('timeout retrying on ENOTFOUND (not mocked)', async () => {
+        const timer = new Timer();
+        try {
+            await fetch('http://domain.invalid', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert.ok(e.message.includes('getaddrinfo ENOTFOUND'));
+            assert.strictEqual(e.code, 'ENOTFOUND');
+            assert.strictEqual(e.type, 'system');
+            assert.strictEqual(e.name, 'FetchError');
+        }
+        console.log(`ellapsed: ${timer.ellapsed}`);
+        assert.ok(timer.ellapsed >= 1000, "Should have taken more than 1s due to retrying");
+    }).timeout(3000);
+    it('timeout retrying on ECONNREFUSED (not mocked)', async () => {
+        const timer = new Timer();
+        try {
+            await fetch('http://localhost:50000/', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert.ok(e.message.includes('ECONNREFUSED'));
+            assert.strictEqual(e.code, 'ECONNREFUSED');
+            assert.strictEqual(e.type, 'system');
+            assert.strictEqual(e.name, 'FetchError');
+        }
+        console.log(`ellapsed: ${timer.ellapsed}`);
+        assert.ok(timer.ellapsed >= 1000, "Should have taken more than 1s due to retrying");
+    }).timeout(3000);
+    it('TypeError is not retried', async () => {
+        try {
+            await fetch('//example.com/', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert.strictEqual(e.name, 'TypeError');
+        }
+        try {
+            await fetch('/some/path', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert.strictEqual(e.name, 'TypeError');
+        }
+        try {
+            await fetch('ftp://example.com/', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert.strictEqual(e.name, 'TypeError');
+        }
     });
 });
