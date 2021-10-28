@@ -998,8 +998,7 @@ describe('test fetch retry on http errors (not mocked)', () => {
             await fetch('http://domain.invalid', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
             assert.fail("Should have thrown an error!");
         } catch (e) {
-            assert.ok(e.message.includes('getaddrinfo ENOTFOUND'));
-            assert.strictEqual(e.code, 'ENOTFOUND');
+            assert.ok(e.message.includes('getaddrinfo')); // some node version have a different error than `ENOTFOUND`
             assert.strictEqual(e.type, 'system');
             assert.strictEqual(e.name, 'FetchError');
         }
