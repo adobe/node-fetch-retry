@@ -962,7 +962,6 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
         assert.strictEqual(response.statusText, 'OK');
         assert.strictEqual(response.status, 200);
     }).timeout(3000);
-
     it('succeed after retry -- node-fetch wraps non-system errors in FetchError', async () => {
         const error = new Error('Parse Error: Response overflow');
         nock(FAKE_BASE_URL)
