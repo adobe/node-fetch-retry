@@ -153,6 +153,7 @@ function shouldRetryOnHttpError(error) {
         console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
         return true;
     }
+    console.error(`Not a "FetchError" with type "system". Error will not be retried: ${error.name}`);
     return false;
 }
 
