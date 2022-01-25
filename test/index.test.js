@@ -860,22 +860,39 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
         console.log(`ellapsed: ${timer.ellapsed}`);
         assert.ok(timer.isBetween(1, 100), "Should have taken approximately 10ms");
     });
-    it('test network timeout [mocked]', async () => {
+    it('test network timeout is retried once [mocked]', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .delayConnection(5000) // 2 seconds
+            .delayConnection(5000) // 5 seconds
             .reply(200);
-        const timer = new Timer();
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200);
+
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+    it('test network timeout again after it is retried once [mocked]', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(1000) // 5 seconds
+            .reply(200);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(1000) // 5 seconds
+            .reply(200);
         try {
-            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 1000 } });
             assert.fail("Should have thrown an error!");
         } catch (e) {
             assert(e.message.includes("network timeout"));
             assert(e.type === "request-timeout");
+            assert(nock.isDone());
         }
-        console.log(`ellapsed: ${timer.ellapsed}`);
-        assert.ok(timer.isBetween(1000, 1500), "Should have taken approximately 1s");
     });
+
     it('timeout retrying on error ECONNRESET', async () => {
         const systemError = new FetchError('socket hang up', 'system', {
             code: 'ECONNRESET'
