@@ -181,6 +181,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 1500); // gets set to half the retryMaxDuration
     });
+
     it('socket timeout is larger than retry max duration but `forceSocketTimeout` is true', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
