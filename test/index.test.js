@@ -52,6 +52,7 @@ describe('test `retryInit` function', () => {
         delete process.env.NODE_FETCH_RETRY_INITIAL_WAIT;
         delete process.env.NODE_FETCH_RETRY_FORCE_TIMEOUT;
     });
+
     it('no params, use default values', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
