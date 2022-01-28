@@ -852,7 +852,6 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
                 message: 'something awful happened',
                 code: '503',
             });
-        const timer = new Timer();
         try {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2 } });
             assert.fail("Should have thrown an error!");
@@ -860,8 +859,7 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
             assert(e.message.includes("network timeout"));
             assert(e.type === "request-timeout");
         }
-        console.log(`ellapsed: ${timer.ellapsed}`);
-        assert.ok(timer.isBetween(1, 1000), "Should have taken less than 1 second");
+        assert(nock.isDone());
     });
     it('test network timeout is retried once [mocked]', async () => {
         nock(FAKE_BASE_URL)
