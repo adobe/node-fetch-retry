@@ -861,7 +861,7 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
             assert(e.type === "request-timeout");
         }
         console.log(`ellapsed: ${timer.ellapsed}`);
-        assert.ok(timer.isBetween(1, 100), "Should have taken approximately 10ms");
+        assert.ok(timer.isBetween(1, 1000), "Should have taken less than 1 second");
     });
     it('test network timeout is retried once [mocked]', async () => {
         nock(FAKE_BASE_URL)
