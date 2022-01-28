@@ -219,6 +219,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
     });
+
     it('custom retry on http response', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
