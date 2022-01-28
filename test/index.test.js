@@ -664,7 +664,6 @@ describe('test fetch retry', () => {
 
     it("verifies handling of socket timeout when socket times out - use retryMax as timeout value (after first failure)", async () => {
         const socketTimeout = 50000;
-
         console.log("!! Test http server ----------");
         // The test needs to be able to control the server socket
         // (which nock or whatever-http-mock can't).
