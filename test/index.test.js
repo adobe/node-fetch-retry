@@ -52,6 +52,7 @@ describe('test `retryInit` function', () => {
         delete process.env.NODE_FETCH_RETRY_INITIAL_WAIT;
         delete process.env.NODE_FETCH_RETRY_FORCE_TIMEOUT;
     });
+
     it('no params, use default values', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -180,6 +181,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 1500); // gets set to half the retryMaxDuration
     });
+
     it('socket timeout is larger than retry max duration but `forceSocketTimeout` is true', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -217,6 +219,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
     });
+
     it('custom retry on http response', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -661,7 +664,6 @@ describe('test fetch retry', () => {
 
     it("verifies handling of socket timeout when socket times out - use retryMax as timeout value (after first failure)", async () => {
         const socketTimeout = 50000;
-
         console.log("!! Test http server ----------");
         // The test needs to be able to control the server socket
         // (which nock or whatever-http-mock can't).
@@ -849,7 +851,6 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
                 message: 'something awful happened',
                 code: '503',
             });
-        const timer = new Timer();
         try {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2 } });
             assert.fail("Should have thrown an error!");
@@ -857,25 +858,41 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
             assert(e.message.includes("network timeout"));
             assert(e.type === "request-timeout");
         }
-        console.log(`ellapsed: ${timer.ellapsed}`);
-        assert.ok(timer.isBetween(1, 100), "Should have taken approximately 10ms");
+        assert(nock.isDone());
     });
-    it('test network timeout [mocked]', async () => {
+    it('test network timeout is retried once [mocked]', async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
-            .delayConnection(5000) // 2 seconds
+            .delayConnection(5000) // 5 seconds
             .reply(200);
-        const timer = new Timer();
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200);
+
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+    it('test network timeout again after it is retried once [mocked]', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(1000) // 5 seconds
+            .reply(200);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(1000) // 5 seconds
+            .reply(200);
         try {
-            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 1000 } });
             assert.fail("Should have thrown an error!");
         } catch (e) {
             assert(e.message.includes("network timeout"));
             assert(e.type === "request-timeout");
+            assert(nock.isDone());
         }
-        console.log(`ellapsed: ${timer.ellapsed}`);
-        assert.ok(timer.isBetween(1000, 1500), "Should have taken approximately 1s");
     });
+
     it('timeout retrying on error ECONNRESET', async () => {
         const systemError = new FetchError('socket hang up', 'system', {
             code: 'ECONNRESET'
