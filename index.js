@@ -208,8 +208,10 @@ module.exports = async function (url, options) {
                     const controller = options.abortController || new AbortController();
                     timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
                     options.signal = controller.signal;
-                }                
-    
+                } else if (options.abortController) {
+                    options.signal = options.abortController.signal;
+                }
+
                 try {
                     const response = await fetch(url, options);
 
