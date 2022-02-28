@@ -154,6 +154,7 @@ function shouldRetryOnHttpError(error, signal) {
         console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
         return true;
     } else if (error.name === 'AbortError') {
+        console.log('@@@@', { error, signal });
         console.error(`AbortError failed with type: ${error.type}; message: ${error.message}; signal:${signal}`);
         //return true;
         return false;
