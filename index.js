@@ -95,7 +95,7 @@ function retryInit(options={}) {
             retryOnHttpResponse: ((typeof retryOptions.retryOnHttpResponse === 'function') && retryOptions.retryOnHttpResponse) ||
                 ((response) => { return response.status >= 500; }),
             retryOnHttpError: ((typeof retryOptions.retryOnHttpError === 'function') && retryOptions.retryOnHttpError) ||
-                ((error) => { return shouldRetryOnHttpError(error, options.signal); }),
+                ((error) => { return shouldRetryOnHttpError(error); }),
             socketTimeout: socketTimeoutValue
         };
     }
@@ -146,7 +146,7 @@ function checkParameters(retryOptions) {
  * @param {Object} error 
  * @returns Returns true for all FetchError's of type `system`
  */
-function shouldRetryOnHttpError(error, signal) {
+function shouldRetryOnHttpError(error) {
     // special handling for known fetch errors: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
     // retry on all errors originating from Node.js core
     // retry on AbortError caused by network timeouts
@@ -154,10 +154,8 @@ function shouldRetryOnHttpError(error, signal) {
         console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
         return true;
     } else if (error.name === 'AbortError') {
-        console.log('@@@@', { error, signal });
-        console.error(`AbortError failed with type: ${error.type}; message: ${error.message}; signal:${signal}`);
-        //return true;
-        return false;
+        console.error(`AbortError failed with type: ${error.type}; message: ${error.message};`);
+        return true;
     }
     return false;
 }
@@ -216,7 +214,7 @@ module.exports = async function (url, options) {
 
                 try {
                     const response = await fetch(url, options);
-
+                    console.log('@abortsignal', options.signal);
                     if (shouldRetry(retryOptions, null, response, waitTime)) {
                         console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
                     } else {
