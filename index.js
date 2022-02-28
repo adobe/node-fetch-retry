@@ -214,7 +214,6 @@ module.exports = async function (url, options) {
 
                 try {
                     const response = await fetch(url, options);
-                    console.log('@abortsignal', options.signal);
                     if (shouldRetry(retryOptions, null, response, waitTime)) {
                         console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
                     } else {
@@ -223,6 +222,7 @@ module.exports = async function (url, options) {
                         return resolve(response);
                     }
                 } catch (error) {
+                    console.log('@abortsignal', options.signal);
                     if (!shouldRetry(retryOptions, error, null, waitTime)) {
                         if (error.name === 'AbortError') {
                             return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
