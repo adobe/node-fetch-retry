@@ -155,7 +155,8 @@ function shouldRetryOnHttpError(error) {
         return true;
     } else if (error.name === 'AbortError') {
         console.error(`AbortError failed with type: ${error.type}; message: ${error.message}`);
-        return true;
+        //return true;
+        return false;
     }
     return false;
 }
@@ -206,7 +207,7 @@ module.exports = async function (url, options) {
                 let timeoutHandler;
                 if (retryOptions.socketTimeout) {
                     const controller = options.abortController || new AbortController();
-                    timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
+                    timeoutHandler = setTimeout(() => controller.abort('LOL@'), retryOptions.socketTimeout);
                     options.signal = controller.signal;
                 } else if (options.abortController) {
                     options.signal = options.abortController.signal;
