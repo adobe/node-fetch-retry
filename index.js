@@ -154,7 +154,7 @@ function shouldRetryOnHttpError(error) {
         console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
         return true;
     } else if (error.name === 'AbortError') {
-        console.error(`AbortError failed with type: ${error.type}; message: ${error.message};`);
+        console.error(`AbortError failed with type: ${error.type}; message: ${error.message}`);
         return true;
     }
     return false;
@@ -194,6 +194,7 @@ function shouldRetryOnHttpError(error) {
 module.exports = async function (url, options) {
     options = options || {};
     const retryOptions = retryInit(options); // set up retry options or set to default settings if not set
+    const externalAC = options.abortController || null;
     delete options.retryOptions; // remove retry options from options passed to actual fetch
     let attempt = 0;
 
@@ -204,13 +205,22 @@ module.exports = async function (url, options) {
                 const waitTime = getRetryDelay(retryOptions);
 
                 let timeoutHandler;
-                if (retryOptions.socketTimeout) {
-                    const controller = options.abortController || new AbortController();
-                    timeoutHandler = setTimeout(() => controller.abort('LOL@'), retryOptions.socketTimeout);
-                    options.signal = controller.signal;
-                } else if (options.abortController) {
-                    options.signal = options.abortController.signal;
+                // set up abort signals, since the caller
+                // expects the wrapper to act as a single request, their AC
+                // must remain valid and continue to work, while we must
+                // create a new one here for each request.
+                const abortController = new AbortController();
+                if (externalAC) {
+                    if (externalAC.signal.aborted) {
+                        abortController.abort();
+                    } else {
+                        externalAC.signal.onabort = () => abortController.abort();
+                    }
                 }
+                if (retryOptions.socketTimeout) {
+                    timeoutHandler = setTimeout(() => abortController.abort(), retryOptions.socketTimeout);
+                }
+                options.signal = abortController.signal;
 
                 try {
                     const response = await fetch(url, options);
@@ -222,7 +232,6 @@ module.exports = async function (url, options) {
                         return resolve(response);
                     }
                 } catch (error) {
-                    console.log('@abortsignal', options.signal);
                     if (!shouldRetry(retryOptions, error, null, waitTime)) {
                         if (error.name === 'AbortError') {
                             return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
