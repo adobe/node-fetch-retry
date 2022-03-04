@@ -126,6 +126,37 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.socketTimeout, 2000);
     });
 
+    it('pass in custom parameters with async functions', async () => {
+        const rewiredFetchRetry = rewire('../index');
+        const retryInit = rewiredFetchRetry.__get__('retryInit');
+        const retryOptions = retryInit({
+            retryOptions: {
+                retryMaxDuration: 3000,
+                retryInitialDelay: 200,
+                retryBackoff: 3.0,
+                retryOnHttpResponse: async () => {
+                    return Promise.resolve(false);
+                },
+                retryOnHttpError: async () => {
+                    return Promise.resolve(false);
+                },
+                socketTimeout: 2000
+            }
+        });
+        assert.strictEqual(typeof retryOptions.startTime, 'number');
+        assert.strictEqual(retryOptions.retryMaxDuration, 3000);
+        assert.strictEqual(retryOptions.retryInitialDelay, 200);
+        assert.strictEqual(retryOptions.retryBackoff, 3);
+        assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
+        assert.strictEqual(await retryOptions.retryOnHttpResponse({ status: 500 }), false);
+        assert.strictEqual(await retryOptions.retryOnHttpResponse({ status: 400 }), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.socketTimeout, 2000);
+    });
+
     it('pass in custom parameters and set enviroment variables, passed parameters take priority', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -241,6 +272,29 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
         assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
         assert.strictEqual(retryOptions.retryOnHttpError(new SpecialError('error!')), true);
+    });
+
+    it('custom async retry on http response', async () => {
+        const rewiredFetchRetry = rewire('../index');
+        const retryInit = rewiredFetchRetry.__get__('retryInit');
+        const retryOptions = retryInit({
+            retryOptions: {
+                retryOnHttpError: async (error) => {
+                    return Promise.resolve(error.name === 'SpecialError' || false);
+                }
+            }
+        });
+        class SpecialError extends Error {
+            constructor(message) {
+                super(message);
+                this.name = 'SpecialError';
+            }
+        }
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new SpecialError('error!')), true);
     });
 });
 
@@ -463,6 +517,29 @@ describe('test fetch retry', () => {
                     retryMaxDuration: 1000,
                     retryOnHttpResponse: (response) => {
                         return !response.ok;
+                    }
+                }
+            });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+
+    it('test retry with async retryOnHttpResponse', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .twice()
+            .reply(403);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200);
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            {
+                method: 'GET', retryOptions: {
+                    retryInitialDelay: 200,
+                    retryMaxDuration: 1000,
+                    retryOnHttpResponse: async (response) => {
+                        return Promise.resolve(!response.ok);
                     }
                 }
             });
