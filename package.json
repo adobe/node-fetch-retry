@@ -1,6 +1,6 @@
 {
   "name": "@adobe/node-fetch-retry",
-  "version": "2.1.3",
+  "version": "2.2.0",
   "main": "index.js",
   "description": "Library for performing retries on HTTP requests",
   "author": {
