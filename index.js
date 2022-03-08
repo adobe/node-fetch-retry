@@ -40,14 +40,18 @@ function isResponseTimedOut(retryOptions) {
  * @param {Object} error error object if the fetch request returned an error
  * @param {Object} response fetch call response
  * @param {Number} wait Amount of time we will wait before retrying next
- * @returns {Boolean} whether or not to retry the request
+ * @returns {Promise<Boolean>} whether or not to retry the request
  */
-function shouldRetry(retryOptions, error, response, waitTime) {
+async function shouldRetry(retryOptions, error, response, waitTime) {
     if (getTimeRemaining(retryOptions) < waitTime) {
         return false;
     } else if (retryOptions && retryOptions.retryOnHttpError && error != null) {
+        // retryOnHttpError can be sync or async because either the promise or result will be
+        // bubbled up to what shouldRetry returns
         return retryOptions.retryOnHttpError(error);
     } else if (retryOptions && retryOptions.retryOnHttpResponse) {
+        // retryOnHttpResponse can be sync or async because either the promise or result will be
+        // bubbled up to what shouldRetry returns
         return retryOptions.retryOnHttpResponse(response);
     } else {
         return false;
@@ -213,7 +217,7 @@ module.exports = async function (url, options) {
                 try {
                     const response = await fetch(url, options);
 
-                    if (shouldRetry(retryOptions, null, response, waitTime)) {
+                    if (await shouldRetry(retryOptions, null, response, waitTime)) {
                         console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
                     } else {
                         // response.timeout should reflect the actual timeout
@@ -221,7 +225,7 @@ module.exports = async function (url, options) {
                         return resolve(response);
                     }
                 } catch (error) {
-                    if (!shouldRetry(retryOptions, error, null, waitTime)) {
+                    if (!(await shouldRetry(retryOptions, error, null, waitTime))) {
                         if (error.name === 'AbortError') {
                             return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
                         } else {
