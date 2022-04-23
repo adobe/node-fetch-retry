@@ -900,7 +900,7 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.ok, true);
     });
     
-    it('doesn\'t modify the passed in options', async () => {
+    it("doesn't modify the passed in options", async () => {
         nock(FAKE_BASE_URL)
             .get(FAKE_PATH)
             .reply(200, { ok: true });
