@@ -19,6 +19,7 @@ const nock = require('nock');
 const assert = require('assert');
 const fetch = require('../index');
 const rewire = require('rewire');
+const {FetchError} = require('node-fetch');
 
 // for tests requiring socket control
 const http = require('http');
@@ -27,6 +28,20 @@ const getPort = require('get-port');
 const FAKE_BASE_URL = 'https://fakeurl.com';
 const FAKE_PATH = '/image/test.png';
 
+class Timer {
+    constructor() {
+        this.start = Date.now();
+    }
+
+    get ellapsed() {
+        return Date.now() - this.start;
+    }
+
+    isBetween(v1, v2) {
+        const answer = (this.ellapsed >= v1 && this.ellapsed <= v2);
+        return answer;
+    }
+}
 
 describe('test `retryInit` function', () => {
     afterEach(() => {
@@ -37,6 +52,7 @@ describe('test `retryInit` function', () => {
         delete process.env.NODE_FETCH_RETRY_INITIAL_WAIT;
         delete process.env.NODE_FETCH_RETRY_FORCE_TIMEOUT;
     });
+
     it('no params, use default values', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -49,6 +65,10 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), true);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), true);
+        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
         assert.strictEqual(retryOptions.socketTimeout, 30000);
     });
 
@@ -68,6 +88,10 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), true);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), true);
+        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
         assert.strictEqual(retryOptions.socketTimeout, 1000);
     });
 
@@ -82,6 +106,9 @@ describe('test `retryInit` function', () => {
                 retryOnHttpResponse: () => {
                     return false;
                 },
+                retryOnHttpError: () => {
+                    return false;
+                },
                 socketTimeout: 2000
             }
         });
@@ -92,6 +119,41 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), false);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.socketTimeout, 2000);
+    });
+
+    it('pass in custom parameters with async functions', async () => {
+        const rewiredFetchRetry = rewire('../index');
+        const retryInit = rewiredFetchRetry.__get__('retryInit');
+        const retryOptions = retryInit({
+            retryOptions: {
+                retryMaxDuration: 3000,
+                retryInitialDelay: 200,
+                retryBackoff: 3.0,
+                retryOnHttpResponse: async () => {
+                    return Promise.resolve(false);
+                },
+                retryOnHttpError: async () => {
+                    return Promise.resolve(false);
+                },
+                socketTimeout: 2000
+            }
+        });
+        assert.strictEqual(typeof retryOptions.startTime, 'number');
+        assert.strictEqual(retryOptions.retryMaxDuration, 3000);
+        assert.strictEqual(retryOptions.retryInitialDelay, 200);
+        assert.strictEqual(retryOptions.retryBackoff, 3);
+        assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
+        assert.strictEqual(await retryOptions.retryOnHttpResponse({ status: 500 }), false);
+        assert.strictEqual(await retryOptions.retryOnHttpResponse({ status: 400 }), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
         assert.strictEqual(retryOptions.socketTimeout, 2000);
     });
 
@@ -111,6 +173,9 @@ describe('test `retryInit` function', () => {
                 retryOnHttpResponse: () => {
                     return false;
                 },
+                retryOnHttpError: () => {
+                    return false;
+                },
                 socketTimeout: 2000
             }
         });
@@ -119,8 +184,13 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryInitialDelay, 200);
         assert.strictEqual(retryOptions.retryBackoff, 3);
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
+        assert.strictEqual(typeof retryOptions.retryOnHttpError, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), false);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
         assert.strictEqual(retryOptions.socketTimeout, 2000);
     });
 
@@ -142,6 +212,7 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
         assert.strictEqual(retryOptions.socketTimeout, 1500); // gets set to half the retryMaxDuration
     });
+
     it('socket timeout is larger than retry max duration but `forceSocketTimeout` is true', () => {
         const rewiredFetchRetry = rewire('../index');
         const retryInit = rewiredFetchRetry.__get__('retryInit');
@@ -178,6 +249,52 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
+    });
+
+    it('custom retry on http response', () => {
+        const rewiredFetchRetry = rewire('../index');
+        const retryInit = rewiredFetchRetry.__get__('retryInit');
+        const retryOptions = retryInit({
+            retryOptions: {
+                retryOnHttpError: (error) => {
+                    return error.name === 'SpecialError' || false;
+                }
+            }
+        });
+        class SpecialError extends Error {
+            constructor(message) {
+                super(message);
+                this.name = 'SpecialError';
+            }
+        }
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new SpecialError('error!')), true);
+    });
+
+    it('custom async retry on http response', async () => {
+        const rewiredFetchRetry = rewire('../index');
+        const retryInit = rewiredFetchRetry.__get__('retryInit');
+        const retryOptions = retryInit({
+            retryOptions: {
+                retryOnHttpError: async (error) => {
+                    return Promise.resolve(error.name === 'SpecialError' || false);
+                }
+            }
+        });
+        class SpecialError extends Error {
+            constructor(message) {
+                super(message);
+                this.name = 'SpecialError';
+            }
+        }
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new SpecialError('error!')), true);
     });
 });
 
@@ -339,39 +456,12 @@ describe('test fetch retry', () => {
         assert.strictEqual(response.statusText, 'Multiple Choices');
         assert.strictEqual(response.status, 300);
     });
-
-    it('test retry with default settings error 3 times 503', async () => {
+    it('test network timeout 200', async () => {
         nock(FAKE_BASE_URL)
-            .get(FAKE_PATH)
-            .thrice()
-            .replyWithError({
-                message: 'something awful happened',
-                code: '503',
-            });
-        nock(FAKE_BASE_URL)
-            .get(FAKE_PATH)
+            .put(FAKE_PATH, 'hello')
             .reply(200, { ok: true });
-        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
-        assert(nock.isDone());
-        assert.strictEqual(response.statusText, 'OK');
-        assert.strictEqual(response.status, 200);
-    });
-
-    it('test retry timeout on error 503', async () => {
-        nock(FAKE_BASE_URL)
-            .get(FAKE_PATH)
-            .thrice()
-            .replyWithError({
-                message: 'something awful happened',
-                code: '503',
-            });
-        try {
-            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 1000 } });
-        } catch (e) {
-            assert(nock.isDone());
-            assert.strictEqual(e.message, 'request to https://fakeurl.com/image/test.png failed, reason: something awful happened');
-            assert.strictEqual(e.code, '503');
-        }
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'PUT', body: 'hello', retryOptions: { retryMaxDuration: 1000 } });
+        assert.strictEqual(response.ok, true);
     });
 
     it('test retry timeout on 404 response', async () => {
@@ -383,7 +473,7 @@ describe('test fetch retry', () => {
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, {
             method: 'GET',
             retryOptions: {
-                retryMaxDuration: 1000,
+                retryMaxDuration: 500,
                 retryOnHttpResponse: (res) => { return !res.ok; }
             }
         });
@@ -397,6 +487,7 @@ describe('test fetch retry', () => {
             .get(FAKE_PATH)
             .twice()
             .reply(505);
+        const timer = new Timer();
         const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
             {
                 method: 'GET', retryOptions: {
@@ -404,6 +495,7 @@ describe('test fetch retry', () => {
                     retryMaxDuration: 1000
                 }
             });
+        assert.ok(timer.isBetween(0, 100), "Should have taken < 100ms");
         assert(!nock.isDone()); // should fail on first fetch call
         nock.cleanAll();
         assert.strictEqual(response.statusText, 'HTTP Version Not Supported');
@@ -425,6 +517,29 @@ describe('test fetch retry', () => {
                     retryMaxDuration: 1000,
                     retryOnHttpResponse: (response) => {
                         return !response.ok;
+                    }
+                }
+            });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+
+    it('test retry with async retryOnHttpResponse', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .twice()
+            .reply(403);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200);
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`,
+            {
+                method: 'GET', retryOptions: {
+                    retryInitialDelay: 200,
+                    retryMaxDuration: 1000,
+                    retryOnHttpResponse: async (response) => {
+                        return Promise.resolve(!response.ok);
                     }
                 }
             });
@@ -499,8 +614,7 @@ describe('test fetch retry', () => {
             {
                 method: 'GET', retryOptions: {
                     retryInitialDelay: 10,
-                    retryMaxDuration: 2500,
-                    retryAllErrors: true
+                    retryMaxDuration: 2500
                 }
             });
         assert(nock.isDone());
@@ -534,6 +648,15 @@ describe('test fetch retry', () => {
             await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryOnHttpResponse: 123425 } });
         } catch (e) {
             assert.strictEqual(e.message, "'retryOnHttpResponse' must be a function: 123425");
+            threw = true;
+        }
+        assert.ok(threw);
+        
+        threw = false;
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryOnHttpError: 123425 } });
+        } catch (e) {
+            assert.strictEqual(e.message, "'retryOnHttpError' must be a function: 123425");
             threw = true;
         }
         assert.ok(threw);
@@ -618,7 +741,6 @@ describe('test fetch retry', () => {
 
     it("verifies handling of socket timeout when socket times out - use retryMax as timeout value (after first failure)", async () => {
         const socketTimeout = 50000;
-
         console.log("!! Test http server ----------");
         // The test needs to be able to control the server socket
         // (which nock or whatever-http-mock can't).
@@ -717,6 +839,7 @@ describe('test fetch retry', () => {
 
         const result = await fetch(`http://${hostname}:${port}`, { method: 'GET', retryOptions: retry });
         assert.ok(result.status === 200);
+        console.error(`result timeout ${result.timeout} vs socketTimeout ${socketTimeout}`);
         assert.ok(result.timeout === socketTimeout);
 
         server.close();
@@ -744,5 +867,244 @@ describe('test fetch retry', () => {
         await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, options);
 
         assert.strictEqual(options.retryOptions.retryMaxDuration, 3000);
+    });
+});
+
+describe('test fetch retry on http errors (throw exceptions)', () => {
+    afterEach(() => {
+        assert(nock.isDone);
+        nock.cleanAll();
+    });
+
+    it('test get retry with default settings invalid error code then 200 with auth headers set', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .twice()
+            .replyWithError({
+                message: 'something awful happened',
+                code: 'INVALID ERROR CODE',
+            });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .matchHeader('Authorization', 'Basic thisShouldBeAnAuthHeader')
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, 
+            { 
+                method: 'GET', headers: { Authorization: 'Basic thisShouldBeAnAuthHeader' }  
+            });
+        assert(nock.isDone());
+        assert(response.ok);
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+
+    it('error 3 times with 503 then succeed', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError({
+                message: 'something awful happened',
+                code: '503',
+            });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    }).timeout(3000);
+
+    it('timeout retrying on error 503 [custom retryMaxDuration]', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError({
+                message: 'something awful happened',
+                code: '503',
+            });
+        const timer = new Timer();
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 700 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert(nock.isDone());
+            assert.strictEqual(e.message, 'request to https://fakeurl.com/image/test.png failed, reason: something awful happened');
+            assert.strictEqual(e.code, '503');
+        }
+        console.log(`ellapsed: ${timer.ellapsed}`);
+        assert.ok(timer.isBetween(300, 500), "Should have taken approximately 400ms");
+    });
+    it('test network timeout [custom retryMaxDuration]', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .once()
+            .replyWithError({
+                message: 'something awful happened',
+                code: '503',
+            });
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert(e.message.includes("network timeout"));
+            assert(e.type === "request-timeout");
+        }
+        assert(nock.isDone());
+    });
+    it('test network timeout is retried once [mocked]', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(5000) // 5 seconds
+            .reply(200);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200);
+
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+    it('test network timeout again after it is retried once [mocked]', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(1000) // 5 seconds
+            .reply(200);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .delayConnection(1000) // 5 seconds
+            .reply(200);
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 1000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert(e.message.includes("network timeout"));
+            assert(e.type === "request-timeout");
+            assert(nock.isDone());
+        }
+    });
+
+    it('timeout retrying on error ECONNRESET', async () => {
+        const systemError = new FetchError('socket hang up', 'system', {
+            code: 'ECONNRESET'
+        });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError(systemError);
+        const timer = new Timer();
+        try {
+            await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET', retryOptions: { retryMaxDuration: 700 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert(nock.isDone());
+            assert.strictEqual(e.message, 'request to https://fakeurl.com/image/test.png failed, reason: socket hang up');
+            assert.strictEqual(e.code, 'ECONNRESET');
+        }
+        console.log(`ellapsed: ${timer.ellapsed}`);
+        assert.ok(timer.isBetween(300, 500), "Should have taken approximately 400ms");
+    });
+    it('retry on error ECONNRESET 3 times then succeed', async () => {
+        const systemError = new FetchError('socket hang up', 'system', {
+            code: 'ECONNRESET'
+        });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError(systemError);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    }).timeout(3000);
+    it('retry on error ENOTFOUND 3 times then succeed', async () => {
+        const systemError = new FetchError('getaddrinfo ENOTFOUND', 'system', {
+            code: 'ENOTFOUND'
+        });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError(systemError);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    }).timeout(3000);
+    it('retry on error ETIMEDOUT 3 times then succeed', async () => {
+        const systemError = new FetchError('connect ETIMEDOUT 1.1.2:443', 'system', {
+            code: 'ETIMEDOUT'
+        });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError(systemError);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    }).timeout(3000);
+    it('retry on error ECONNREFUSED 3 times then succeed', async () => {
+        const systemError = new FetchError('connect ECONNREFUSED 1.1.2:443', 'system', {
+            code: 'ECONNREFUSED'
+        });
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError(systemError);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    }).timeout(3000);
+    it.skip('timeout retrying on ENOTFOUND (not mocked)', async () => {
+        try {
+            await fetch('http://domain.invalid', { method: 'GET', retryOptions: { retryMaxDuration: 2000 } });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert.ok(e.message.includes('getaddrinfo ENOTFOUND'));
+            assert.strictEqual(e.code, 'ENOTFOUND');
+        }
+    }).timeout(3000);
+
+    it('succeed after retry -- node-fetch wraps non-system errors in FetchError', async () => {
+        const error = new Error('Parse Error: Response overflow');
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError(error);
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
+    });
+    it('succeed after retry  -- node-fetch wraps incorrectly formatted errors in FetchError', async () => {
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .thrice()
+            .replyWithError('fake error');
+        nock(FAKE_BASE_URL)
+            .get(FAKE_PATH)
+            .reply(200, { ok: true });
+        const response = await fetch(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+        assert(nock.isDone());
+        assert.strictEqual(response.statusText, 'OK');
+        assert.strictEqual(response.status, 200);
     });
 });

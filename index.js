@@ -15,21 +15,47 @@ const AbortController = require('abort-controller');
 const fetch = require('node-fetch');
 const {FetchError} = fetch;
 
+function getTimeRemaining(retryOptions) {
+    if (retryOptions && retryOptions.startTime && retryOptions.retryMaxDuration) {
+        const millisEllapsed = Date.now() - retryOptions.startTime;        
+        const remaining = retryOptions.retryMaxDuration - millisEllapsed;
+        return Math.max(0, remaining);
+    } else {
+        return Infinity;
+    }
+}
+
 /**
- * Retry
+ * Have we exceeded the max duration for this fetch operation?
+ * @param {*} retryOptions Options including retryMaxDuration and startTime
+ * @returns True if we have a max duration set and it is exceeded, otherwise false
+ */
+function isResponseTimedOut(retryOptions) {
+    return getTimeRemaining(retryOptions) <= 0;
+}
+
+/**
+ * shouldRetry
  * @param {RetryOptions} retryOptions whether or not to retry on all http error codes or just >500
  * @param {Object} error error object if the fetch request returned an error
  * @param {Object} response fetch call response
- * @returns {Boolean} whether or not to retry the request
+ * @param {Number} wait Amount of time we will wait before retrying next
+ * @returns {Promise<Boolean>} whether or not to retry the request
  */
-function retry(retryOptions, error, response) {
-    if (retryOptions) {
-        const totalMillisToWait = (retryOptions.retryInitialDelay) + (Date.now() - retryOptions.startTime);
-        return ((totalMillisToWait < retryOptions.retryMaxDuration) &&
-            (error !== null || (retryOptions.retryOnHttpResponse && (retryOptions.retryOnHttpResponse(response))))
-        );
+async function shouldRetry(retryOptions, error, response, waitTime) {
+    if (getTimeRemaining(retryOptions) < waitTime) {
+        return false;
+    } else if (retryOptions && retryOptions.retryOnHttpError && error != null) {
+        // retryOnHttpError can be sync or async because either the promise or result will be
+        // bubbled up to what shouldRetry returns
+        return retryOptions.retryOnHttpError(error);
+    } else if (retryOptions && retryOptions.retryOnHttpResponse) {
+        // retryOnHttpResponse can be sync or async because either the promise or result will be
+        // bubbled up to what shouldRetry returns
+        return retryOptions.retryOnHttpResponse(response);
+    } else {
+        return false;
     }
-    return false;
 }
 
 /**
@@ -72,6 +98,8 @@ function retryInit(options={}) {
             retryBackoff: retryOptions.retryBackoff || DEFAULT_BACKOFF,
             retryOnHttpResponse: ((typeof retryOptions.retryOnHttpResponse === 'function') && retryOptions.retryOnHttpResponse) ||
                 ((response) => { return response.status >= 500; }),
+            retryOnHttpError: ((typeof retryOptions.retryOnHttpError === 'function') && retryOptions.retryOnHttpError) ||
+                ((error) => { return shouldRetryOnHttpError(error); }),
             socketTimeout: socketTimeoutValue
         };
     }
@@ -84,7 +112,7 @@ function retryInit(options={}) {
  * @param {RetryOptions|Boolean} retryOptions Retry options
  * @param {Boolean} [random=true] Add randomness
  */
-function retryDelay(retryOptions, random = true) {
+function getRetryDelay(retryOptions, random = true) {
     return retryOptions.retryInitialDelay +
         (random ? Math.floor(Math.random() * 100) : 99);
 }
@@ -105,6 +133,9 @@ function checkParameters(retryOptions) {
     if (retryOptions.retryOnHttpResponse && !(typeof retryOptions.retryOnHttpResponse === 'function')) {
         throw new Error(`'retryOnHttpResponse' must be a function: ${retryOptions.retryOnHttpResponse}`);
     }
+    if (retryOptions.retryOnHttpError && !(typeof retryOptions.retryOnHttpError === 'function')) {
+        throw new Error(`'retryOnHttpError' must be a function: ${retryOptions.retryOnHttpError}`);
+    }
     if (typeof retryOptions.retryBackoff !== 'undefined'
         && !(Number.isInteger(retryOptions.retryBackoff) && retryOptions.retryBackoff >= 1.0)) {
         throw new Error('`retryBackoff` must be a positive integer >= 1');
@@ -115,10 +146,30 @@ function checkParameters(retryOptions) {
 }
 
 /**
+ * Evaluates whether or not to retry based on HTTP error
+ * @param {Object} error 
+ * @returns Returns true for all FetchError's of type `system`
+ */
+function shouldRetryOnHttpError(error) {
+    // special handling for known fetch errors: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
+    // retry on all errors originating from Node.js core
+    // retry on AbortError caused by network timeouts
+    if (error.name === 'FetchError' && error.type === 'system') {
+        console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
+        return true;
+    } else if (error.name === 'AbortError') {
+        console.error(`AbortError failed with type: ${error.type}; message: ${error.message}`);
+        return true;
+    }
+    return false;
+}
+
+/**
  * @typedef {Object} RetryOptions options for retry or false if want to disable retry
  * @property {Integer} retryMaxDuration time (in milliseconds) to retry until throwing an error
  * @property {Integer} retryInitialDelay time to wait between retries in milliseconds
  * @property {Function} retryOnHttpResponse a function determining whether to retry on a specific HTTP code
+ * @property {Function} retryOnHttpError a function determining whether to retry on a specific HTTP error
  * @property {Integer} retryBackoff backoff factor for wait time between retries (defaults to 2.0)
  * @property {Integer} socketTimeout Optional socket timeout in milliseconds (defaults to 60000ms)
  * @property {Boolean} forceSocketTimeout If true, socket timeout will be forced to use `socketTimeout` property declared (defaults to false)
@@ -127,6 +178,11 @@ function checkParameters(retryOptions) {
  * @typedef {Function} retryOnHttpResponse determines whether to do a retry on the response
  * @property {Number} response response from the http fetch call
  * @returns {Boolean} true if want to retry on this response, false if do not want to retry on the response
+ */
+/**
+ * @typedef {Function} retryOnHttpError determines whether to do a retry on the HTTP error response
+ * @property {Object} error error thrown during the fetch request
+ * @returns {Boolean} true if want to retry on this error, false if do not want to retry on the response
  */
 /**
  * @typedef {Object} Options options for fetch-retry
@@ -147,43 +203,46 @@ module.exports = async function (url, options) {
 
     return new Promise(function (resolve, reject) {
         const wrappedFetch = async () => {
-            ++attempt;
+            while (!isResponseTimedOut(retryOptions)) {
+                ++attempt;
+                const waitTime = getRetryDelay(retryOptions);
 
-            let timeoutHandler;
-            if (retryOptions.socketTimeout) {
-                const controller = new AbortController();
-                timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
-                options.signal = controller.signal;
-            }
+                let timeoutHandler;
+                if (retryOptions.socketTimeout) {
+                    const controller = new AbortController();
+                    timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
+                    options.signal = controller.signal;
+                }                
+    
+                try {
+                    const response = await fetch(url, options);
 
-            try {
-                const response = await fetch(url, options);
-                clearTimeout(timeoutHandler);
-
-                if (!retry(retryOptions, null, response)) {
-                    // response.timeout should reflect the actual timeout
-                    response.timeout = retryOptions.socketTimeout;
-                    return resolve(response);
-                }
-
-                console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} failed (status ${response.status}): ${response.statusText}`);
-            } catch (error) {
-                clearTimeout(timeoutHandler);
-
-                if (!retry(retryOptions, error, null)) {
-                    if (error.name === 'AbortError') {
-                        return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
+                    if (await shouldRetry(retryOptions, null, response, waitTime)) {
+                        console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
+                    } else {
+                        // response.timeout should reflect the actual timeout
+                        response.timeout = retryOptions.socketTimeout;
+                        return resolve(response);
                     }
-
-                    return reject(error);
+                } catch (error) {
+                    if (!(await shouldRetry(retryOptions, error, null, waitTime))) {
+                        if (error.name === 'AbortError') {
+                            return reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
+                        } else {
+                            return reject(error);
+                        }
+                    }
+                    console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} error: ${error.name}, ${error.message}`);
+                } finally {
+                    clearTimeout(timeoutHandler);
                 }
-
-                console.error(`Retrying in ${retryOptions.retryInitialDelay} milliseconds, attempt ${attempt - 1} error: ${error.message}`);
+                // Fetch loop is about to repeat, delay as needed first.
+                if (waitTime > 0) {
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+                retryOptions.retryInitialDelay *= retryOptions.retryBackoff; // update retry interval
             }
-
-            retryOptions.retryInitialDelay *= retryOptions.retryBackoff; // update retry interval
-            const waitTime = retryDelay(retryOptions);
-            setTimeout(() => { wrappedFetch(); }, waitTime);
+            reject(new FetchError(`network timeout at ${url}`, 'request-timeout'));
         };
         wrappedFetch();
     });
