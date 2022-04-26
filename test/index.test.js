@@ -20,6 +20,7 @@ const assert = require('assert');
 const fetch = require('../index');
 const rewire = require('rewire');
 const {FetchError} = require('node-fetch');
+const sinon = require('sinon');
 
 // for tests requiring socket control
 const http = require('http');
@@ -858,6 +859,7 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
     afterEach(() => {
         assert(nock.isDone);
         nock.cleanAll();
+        sinon.restore();
     });
 
     it('test get retry with default settings invalid error code then 200 with auth headers set', async () => {
@@ -936,6 +938,23 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
             assert(e.type === "request-timeout");
         }
         assert(nock.isDone());
+    });
+    it('test network timeout before while loop (in isResponseTimedOut)', async () => {
+        const rewiredFetchRetry = rewire('../index');
+        const getTimeRemainingObject = {getTimeRemaining: rewiredFetchRetry.__get__('getTimeRemaining')};
+
+        const getTimeRemainingStub = sinon.stub(getTimeRemainingObject, 'getTimeRemaining').callsFake(() => {
+            console.log("Mocked isResponseTimedOut");
+            return -1;
+        });
+        rewiredFetchRetry.__set__('getTimeRemaining', getTimeRemainingStub);
+        try {
+            await rewiredFetchRetry(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
+            assert.fail("Should have thrown an error!");
+        } catch (e) {
+            assert(e.message.includes("network timeout"));
+            assert(e.type === "request-timeout");
+        }
     });
     it('test network timeout is retried once [mocked]', async () => {
         nock(FAKE_BASE_URL)
