@@ -65,10 +65,10 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
-        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), true);
         assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), true);
         assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), true);
-        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), true);
         assert.strictEqual(retryOptions.socketTimeout, 30000);
     });
 
@@ -88,10 +88,10 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(typeof retryOptions.retryOnHttpResponse, 'function');
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 500 }), true);
         assert.strictEqual(retryOptions.retryOnHttpResponse({ status: 400 }), false);
-        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), true);
         assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), true);
         assert.strictEqual(retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), true);
-        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), true);
         assert.strictEqual(retryOptions.socketTimeout, 1000);
     });
 
@@ -295,6 +295,53 @@ describe('test `retryInit` function', () => {
         assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), false);
         assert.strictEqual(await retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
         assert.strictEqual(await retryOptions.retryOnHttpError(new SpecialError('error!')), true);
+    });
+    it('another custom async retry on http response', async () => {
+        const rewiredFetchRetry = rewire('../index');
+        const retryInit = rewiredFetchRetry.__get__('retryInit');
+        const retryOptions = retryInit({
+            retryOptions: {
+                retryOnHttpError: async (error) => {
+                    if (error.name === 'FetchError' && error.type === 'system') {
+                        console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
+                        return true;
+                    } else if (error.name === 'AbortError') {
+                        console.error(`AbortError failed with type: ${error.type}; message: ${error.message}`);
+                        return true;
+                    }
+                    return false;
+                }
+            }
+        });
+        class AbortError extends Error {
+            constructor(message) {
+                super(message);
+                this.name = 'AbortError';
+            }
+        }
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), true);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), true);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), false);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new AbortError('error!')), true);
+    });
+    it('retry on all non developer errors by default', async () => {
+        const rewiredFetchRetry = rewire('../index');
+        const retryInit = rewiredFetchRetry.__get__('retryInit');
+        const retryOptions = retryInit({});
+        class AbortError extends Error {
+            constructor(message) {
+                super(message);
+                this.name = 'AbortError';
+            }
+        }
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'non-system')), true);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('hello!', 'system')), true);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new FetchError('ECONNRESET', 'system')), true);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new Error('ECONNRESET', 'system')), true);
+        assert.strictEqual(await retryOptions.retryOnHttpError(new AbortError('error!')), true);
+        // will be fixed to not retry on these by https://github.com/adobe/node-fetch-retry/issues/87
+        assert.strictEqual(retryOptions.retryOnHttpError(new TypeError('x is not a valid JSON')), true);
     });
 });
 
