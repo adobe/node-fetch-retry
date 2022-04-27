@@ -941,17 +941,18 @@ describe('test fetch retry on http errors (throw exceptions)', () => {
     });
     it('test network timeout before while loop (in isResponseTimedOut)', async () => {
         const rewiredFetchRetry = rewire('../index');
-        const getTimeRemainingObject = {getTimeRemaining: rewiredFetchRetry.__get__('getTimeRemaining')};
+        const isResponseTimedOutObject = {isResponseTimedOut: rewiredFetchRetry.__get__('isResponseTimedOut')};
 
-        const getTimeRemainingStub = sinon.stub(getTimeRemainingObject, 'getTimeRemaining').callsFake(() => {
+        const isResponseTimedOutStub = sinon.stub(isResponseTimedOutObject, 'isResponseTimedOut').callsFake(() => {
             console.log("Mocked isResponseTimedOut");
-            return -1;
+            return true;
         });
-        rewiredFetchRetry.__set__('getTimeRemaining', getTimeRemainingStub);
+        rewiredFetchRetry.__set__('isResponseTimedOut', isResponseTimedOutStub);
         try {
             await rewiredFetchRetry(`${FAKE_BASE_URL}${FAKE_PATH}`, { method: 'GET' });
             assert.fail("Should have thrown an error!");
         } catch (e) {
+            // TODO: test will require a change for this issue https://github.com/adobe/node-fetch-retry/issues/81
             assert(e.message.includes("network timeout"));
             assert(e.type === "request-timeout");
         }
