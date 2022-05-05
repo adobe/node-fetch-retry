@@ -100,7 +100,7 @@ function retryInit(options={}) {
             retryOnHttpResponse: ((typeof retryOptions.retryOnHttpResponse === 'function') && retryOptions.retryOnHttpResponse) ||
                 ((response) => { return response.status >= 500; }),
             retryOnHttpError: ((typeof retryOptions.retryOnHttpError === 'function') && retryOptions.retryOnHttpError) ||
-                ((error) => { return shouldRetryOnHttpError(error); }),
+                (() => { return true; }),
             socketTimeout: socketTimeoutValue
         };
     }
@@ -144,25 +144,6 @@ function checkParameters(retryOptions) {
     if (retryOptions.socketTimeout && !(Number.isInteger(retryOptions.socketTimeout) && retryOptions.socketTimeout >= 0)) {
         throw new Error('`socketTimeout` must not be a negative integer');
     }
-}
-
-/**
- * Evaluates whether or not to retry based on HTTP error
- * @param {Object} error 
- * @returns Returns true for all FetchError's of type `system`
- */
-function shouldRetryOnHttpError(error) {
-    // special handling for known fetch errors: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
-    // retry on all errors originating from Node.js core
-    // retry on AbortError caused by network timeouts
-    if (error.name === 'FetchError' && error.type === 'system') {
-        console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
-        return true;
-    } else if (error.name === 'AbortError') {
-        console.error(`AbortError failed with type: ${error.type}; message: ${error.message}`);
-        return true;
-    }
-    return false;
 }
 
 /**

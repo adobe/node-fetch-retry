@@ -24,8 +24,10 @@ Without configuring any parameters, the retry behavior will be as follows:
 - retry for 60s
 - retry inital delay of 100ms with exponential backoff, configurable as a multiplier defaulting to 2
 - retry only on 5xx response
-- retry on all FetchError system errors
+- retry on all errors thrown by fetch
    - see node-fetch error handling: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
+   - with special behavior to avoid retrying on developer errors (program errors)
+   - this includes `AbortError`'s, `FetchError`'s
 - socket timeout of 30s
 ```js
 const fetch = require('@adobe/node-fetch-retry');
