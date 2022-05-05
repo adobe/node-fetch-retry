@@ -99,7 +99,7 @@ function retryInit(options={}) {
             retryOnHttpResponse: ((typeof retryOptions.retryOnHttpResponse === 'function') && retryOptions.retryOnHttpResponse) ||
                 ((response) => { return response.status >= 500; }),
             retryOnHttpError: ((typeof retryOptions.retryOnHttpError === 'function') && retryOptions.retryOnHttpError) ||
-                ((error) => { return shouldRetryOnHttpError(error); }),
+                (() => { return true; }),
             socketTimeout: socketTimeoutValue
         };
     }
@@ -143,15 +143,6 @@ function checkParameters(retryOptions) {
     if (retryOptions.socketTimeout && !(Number.isInteger(retryOptions.socketTimeout) && retryOptions.socketTimeout >= 0)) {
         throw new Error('`socketTimeout` must not be a negative integer');
     }
-}
-
-/**
- * Evaluates whether or not to retry based on HTTP error
- * @param {Object} error 
- * @returns Returns true for all FetchError's of type `system`
- */
-function shouldRetryOnHttpError() {
-    return true;
 }
 
 /**

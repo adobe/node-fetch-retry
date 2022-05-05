@@ -26,7 +26,7 @@ Without configuring any parameters, the retry behavior will be as follows:
 - retry only on 5xx response
 - retry on all errors thrown by fetch
    - see node-fetch error handling: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
-   - with special behaviro to avoid retrying on developer errors (program errors)
+   - with special behavior to avoid retrying on developer errors (program errors)
    - this includes `AbortError`'s, `FetchError`'s
 - socket timeout of 30s
 ```js
