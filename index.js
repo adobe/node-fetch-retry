@@ -12,7 +12,7 @@
 'use strict';
 
 const AbortController = require('abort-controller');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 const {FetchError} = fetch;
 
 function getTimeRemaining(retryOptions) {
