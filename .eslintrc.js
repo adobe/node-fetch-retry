@@ -13,5 +13,9 @@
 'use strict';
 
 module.exports = {
-    "extends": "@adobe/eslint-config-asset-compute"
+    "extends": "@adobe/eslint-config-asset-compute",
+    "parserOptions": {
+        "sourceType": "module",
+        "allowImportExportEverywhere": true
+      }
 };
