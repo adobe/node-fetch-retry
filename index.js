@@ -12,8 +12,6 @@
 'use strict';
 
 const AbortController = require('abort-controller');
-const fetch = require('node-fetch');
-const {FetchError} = fetch;
 
 function getTimeRemaining(retryOptions) {
     if (retryOptions && retryOptions.startTime && retryOptions.retryMaxDuration) {
@@ -203,6 +201,7 @@ module.exports = async function (url, options) {
 
     return new Promise(function (resolve, reject) {
         const wrappedFetch = async () => {
+            const FetchError = await import('node-fetch').then( ({ FetchError }) => FetchError);
             while (!isResponseTimedOut(retryOptions)) {
                 ++attempt;
                 const waitTime = getRetryDelay(retryOptions);
@@ -215,7 +214,7 @@ module.exports = async function (url, options) {
                 }                
     
                 try {
-                    const response = await fetch(url, options);
+                    const response = await import('node-fetch').then( ({ default: fetch }) => fetch(url, options));
 
                     if (await shouldRetry(retryOptions, null, response, waitTime)) {
                         console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
