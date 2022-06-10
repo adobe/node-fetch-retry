@@ -24,7 +24,7 @@
     "nock": "^13.2.4",
     "nyc": "^15.1.0",
     "rewire": "^5.0.0",
-    "semantic-release": "^17.4.7"
+    "semantic-release": "^19.0.3"
   },
   "keywords": [
     "fetch",
