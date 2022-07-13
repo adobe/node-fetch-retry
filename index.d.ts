@@ -4,8 +4,8 @@ export interface RetryOptions{
   retryMaxDuration?: number
   retryInitialDelay?: number
   retryBackoff?: number
-  retryOnHttpError?: (error: Error) => boolean
-  retryOnHttpResponse?: (response: Response) => boolean
+  retryOnHttpError?: (error: Error) => Promise<boolean> | boolean
+  retryOnHttpResponse?: (response: Response) => Promise<boolean> | boolean
   socketTimeout?: number
   forceSocketTimeout?: boolean
 }
