@@ -208,7 +208,7 @@ module.exports = async function (url, options) {
                 const waitTime = getRetryDelay(retryOptions);
 
                 let timeoutHandler;
-                if (retryOptions.socketTimeout) {
+                if (!options.signal && retryOptions.socketTimeout) {
                     const controller = new AbortController();
                     timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
                     options.signal = controller.signal;
