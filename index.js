@@ -99,7 +99,7 @@ function retryInit(options={}) {
             retryOnHttpResponse: ((typeof retryOptions.retryOnHttpResponse === 'function') && retryOptions.retryOnHttpResponse) ||
                 ((response) => { return response.status >= 500; }),
             retryOnHttpError: ((typeof retryOptions.retryOnHttpError === 'function') && retryOptions.retryOnHttpError) ||
-                ((error) => { return shouldRetryOnHttpError(error); }),
+                ((error) => { return shouldRetryOnHttpError(error, !!options.signal); }),
             socketTimeout: socketTimeoutValue
         };
     }
@@ -150,14 +150,14 @@ function checkParameters(retryOptions) {
  * @param {Object} error 
  * @returns Returns true for all FetchError's of type `system`
  */
-function shouldRetryOnHttpError(error) {
+function shouldRetryOnHttpError(error, ignoreAborted) {
     // special handling for known fetch errors: https://github.com/node-fetch/node-fetch/blob/main/docs/ERROR-HANDLING.md
     // retry on all errors originating from Node.js core
     // retry on AbortError caused by network timeouts
     if (error.name === 'FetchError' && error.type === 'system') {
         console.error(`FetchError failed with code: ${error.code}; message: ${error.message}`);
         return true;
-    } else if (error.name === 'AbortError') {
+    } else if (error.name === 'AbortError' && !ignoreAborted) {
         console.error(`AbortError failed with type: ${error.type}; message: ${error.message}`);
         return true;
     }
@@ -212,7 +212,7 @@ module.exports = async function (url, options) {
                     const controller = new AbortController();
                     timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
                     options.signal = controller.signal;
-                }                
+                }
     
                 try {
                     const response = await fetch(url, options);
