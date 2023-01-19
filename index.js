@@ -187,6 +187,7 @@ function shouldRetryOnHttpError(error) {
 /**
  * @typedef {Object} Options options for fetch-retry
  * @property {Object} RetryOptions options for retry or false if want to disable retry
+ * @property {Function} fetch the fetch implementation to use 
  * ... other options for fetch call (method, headers, etc...)
  */
 /**
@@ -209,13 +210,15 @@ module.exports = async function (url, options) {
 
                 let timeoutHandler;
                 if (retryOptions.socketTimeout) {
-                    const controller = new AbortController();
+                    const abortCon = options.AbortController || AbortController;
+                    const controller = new abortCon();
                     timeoutHandler = setTimeout(() => controller.abort(), retryOptions.socketTimeout);
                     options.signal = controller.signal;
                 }                
     
                 try {
-                    const response = await fetch(url, options);
+                    const fetchFn = options.fetch || fetch;
+                    const response = await fetchFn(url, options);
 
                     if (await shouldRetry(retryOptions, null, response, waitTime)) {
                         console.error(`Retrying in ${waitTime} milliseconds, attempt ${attempt} failed (status ${response.status}): ${response.statusText}`);
