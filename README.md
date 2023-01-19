@@ -62,6 +62,8 @@ All the retry options are configurable and can be set in `retryOptions` in the `
 | `retryOnHttpError` | Function | a *function* determining whether to retry given the HTTP error exception thrown. Can be asynchronous | none | retry on all `FetchError`'s of type `system`|
 | `socketTimeout` | Number | time until socket timeout in milliseconds. _Note: if `socketTimeout` is >= `retryMaxDuration`, it will automatically adjust the socket timeout to be exactly half of the `retryMaxDuration`. To disable this feature, see `forceSocketTimeout` below_ | `NODE_FETCH_RETRY_SOCKET_TIMEOUT` | 30000 ms |
 | `forceSocketTimeout` | Boolean | If true, socket timeout will be forced to use `socketTimeout` property declared regardless of the `retryMaxDuration`. _Note: this feature was designed to help with unit testing and is not intended to be used in practice_ | `NODE_FETCH_RETRY_FORCE_TIMEOUT` | false |
+| `fetch` | Function | the fetch API implementation to use | none |
+| `AbortController` | Function | the AbortController constructor function to use | none |
 
 _Note: the environment variables override the default values if the corresponding parameter is not set. These are designed to help with unit testing. Passed in parameters will still override the environment variables_
 
@@ -158,6 +160,23 @@ const fetch = require('@adobe/node-fetch-retry');
 async main() {
     const response = await fetch(url, {
         retryOptions: false
+    });
+}
+```
+
+### Custom Fetch
+
+You can disable all retry behavior by setting `retryOptions` to `false`.
+
+```js
+const {fetch: adobeFetch, AbortController} = require('@adobe/fetch');
+const fetch = require('@adobe/node-fetch-retry');
+
+async main() {
+    const response = await fetch(url, {
+        retryOptions: false,
+        fetch: adobeFetch,
+        AbortController
     });
 }
 ```
