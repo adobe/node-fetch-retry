@@ -4,6 +4,7 @@
 
 # node-fetch-retry
 
+test CI
 Node Module for performing retries for HTTP requests.
 
 It is a wrapper around [`node-fetch`](https://github.com/node-fetch/node-fetch) library. It has default retry logic built in as described below, as well as configurable parameters. It also has built-in support for Apache OpenWhisk actions, adjusting the timeout to reflect the action timeout.
